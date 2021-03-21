@@ -1,9 +1,0 @@
-Entry 1:
--------------------------------------------
-Created a repository on github for my project. I cloned it to my computer and just added a starting file.
-Also setup a project on trello. I looked at existing package trackers and saw what sort of information they use and hot it is displayed.
-
-Entry 2:
--------------------------------------------
-Looked at different front-end frameworks or libraries I could use. Probably going to use react as it also has
-something called react-native which allows it to run on android and IOS.
