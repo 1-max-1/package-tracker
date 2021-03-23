@@ -1,0 +1,5 @@
+CREATE TABLE 'users' (
+'id' INTEGER PRIMARY KEY AUTOINCREMENT,
+'username' TEXT(20) NOT NULL ,
+'password' TEXT NOT NULL 
+);
