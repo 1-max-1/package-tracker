@@ -1,0 +1,12 @@
+{% from "includes/form_renderer.html" import render_form %}
+{% extends "main_layout_container.html" %}
+{% block body %}
+	<h1>Login</h1>
+
+	<!-- This form will submit to itself -->
+	<form action="" method="POST">
+		<!-- The renderer does all of the work of getting the fields and adding them to the html -->
+		{{render_form(form)}}
+		<input type="submit" class="btn btn-primary" style="margin-top: 10px;" value="Login"/>
+	</form>
+{% endblock %}

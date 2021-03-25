@@ -1,0 +1,19 @@
+<!-- Takes in an abject that mustinherit from (extend) FlaskForm -->
+{% macro render_form(form) %}
+	<!-- The form will have a built in csrf protection field - we can just output it to the html -->
+	<div>{{ form.csrf_token }}</div>
+
+	<!-- Loop through all of the remaining fields, skipping the csrf one we already did -->
+	{% for field in form if field.name != 'csrf_token' %}
+		<div class="form-control">
+			<!-- Output the field title and the actual field element to the html -->
+			{{ field.label() }}
+			{{ field() }}
+
+			<!-- Loop through any errors and display them in a div that bootstrap will color -->
+			{% for error in field.errors %}
+				<div class="help-inline text-danger">{{ error }}</div>
+			{% endfor %}
+		</div>
+	{% endfor %}
+{% endmacro %}
