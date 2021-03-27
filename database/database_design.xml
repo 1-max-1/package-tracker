@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <!-- SQL XML created by WWW SQL Designer, https://github.com/ondras/wwwsqldesigner/ -->
-<!-- Active URL: https://ondras.zarovi.cz/sql/demo/ -->
+<!-- Active URL: https://ondras.zarovi.cz/sql/demo/?keyword=default -->
 <sql>
 <datatypes db="sqlite">
 	<group label="Affinity">
@@ -10,15 +10,15 @@
 		<type label="Real" default="0" length="0" sql="REAL" quote="" color="rgb(238,238,170)"/>
 		<type label="None" default="" length="0" sql="NONE" quote="" color="rgb(200,255,200)"/>
 	</group>
-</datatypes><table x="373" y="383" name="users">
-<row name="id" null="1" autoincrement="1">
+</datatypes><table x="547" y="372" name="users">
+<row name="id" null="0" autoincrement="1">
 <datatype>INTEGER</datatype>
 </row>
-<row name="username" null="0" autoincrement="0">
-<datatype>TEXT(20)</datatype>
+<row name="email" null="0" autoincrement="0">
+<datatype>TEXT(254)</datatype>
 </row>
 <row name="password" null="0" autoincrement="0">
-<datatype>TEXT</datatype>
+<datatype>TEXT(128)</datatype>
 </row>
 <key type="PRIMARY" name="">
 <part>id</part>

@@ -10,11 +10,22 @@
 
 		<title>Parcel tracker</title>
 	</head>
+
 	<body>
-		<!-- This block will contain all of the html for each page. Each layout will extend this page and add its content to it -->
-		{% block body %}
 		<!-- Each page will also include the navbar. Putting it in one file makes it easy -->
 		{% include "includes/navbar.html" %}
+
+		<!-- This gets all of the flash messages from Flask. -->
+		{% with messages = get_flashed_messages(with_categories=true) %}
+			<!-- If any messages exist, present them using the appropriate bootstrap category. -->
+			<!-- Categories: success (green), info (blue), warning (yellow), danger (red) -->
+			{% for category, message in messages %}
+				<div class="alert alert-{{category}}">{{ message }}</div>
+			{% endfor %}
+		{% endwith %}
+
+		<!-- This block will contain all of the html for each page. Each layout will extend this main page and add its content to the block -->
+		{% block body %}
 		{% endblock %}
 
 		<!-- Bootstrap Bundle with Popper -->
