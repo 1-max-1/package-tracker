@@ -1,12 +1,14 @@
 from os import environ
 from flask import Flask, render_template, session, flash, redirect, url_for
-from forms import LoginForm, RegisterForm
+from forms import LoginForm, RegisterForm, AddPackageForm
 from auth import Authenticator
+from packages import PackageHandler
 
 app = Flask(__name__)
 # A key is needed for some operations. In particular, for wt forms to protect against CSRF
 app.secret_key = environ["FLASK_KEY"]
 authenticator = Authenticator()
+packageHandler = PackageHandler()
 
 @app.route('/')
 def hello_world():
@@ -17,9 +19,11 @@ def hello_world():
 # function by first checking if the user is logged in. If so, it runs the passes function.
 # See here: https://realpython.com/primer-on-python-decorators/
 def login_required(func):
-	def wrapper(*args, **kwargs):
+	from functools import wraps
+	@wraps(func)
+	def wrapper():
 		if "userID" in session and session["userID"] > 0:
-			func(*args, **kwargs)
+			return func()
 		else:
 			flash("You need to log in to do that!", "danger")
 			return redirect(url_for("login"))
@@ -53,7 +57,7 @@ def login():
 def logout():
 	session["userID"] = 0
 	session.clear()
-	flash("You have been logged out!", "success")
+	flash("You have been logged out!", "primary")
 	return redirect(url_for("login"))
 
 @app.route("/register", methods=["GET", "POST"])
@@ -77,10 +81,22 @@ def register():
 	# If the request was not submitted (or the user already exists) then we can just render the form normally.
 	return render_template("register.html", form=form)
 
+@app.route("/packageList", methods=["GET", "POST"])
 @login_required
-@app.route("/packageList")
 def packageList():
-	return render_template("main_layout_container.html")
+	form = AddPackageForm()
+	# If the form was submitted with a POST request then the user is adding a package
+	if form.validate_on_submit():
+		if packageHandler.createNewPackage(form.trackingCode.data, session["userID"]):
+			flash("Package added successfully!", "success")
+			form.trackingCode.data = ""
+		else:
+			flash("You have already added that package!", "warning")
+
+	# Once all of the package handling is done, we can render the list of packages. We want to do
+	# this anway even if the request is a get request and doesnt have a form
+	packageListDict = packageHandler.getListOfPackages(session["userID"])
+	return render_template("packageList.html", form=form, packageList=packageListDict)
 
 if __name__ == "__main__":
 	app.run(debug=True)

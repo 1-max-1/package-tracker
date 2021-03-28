@@ -10,7 +10,7 @@
 		<type label="Real" default="0" length="0" sql="REAL" quote="" color="rgb(238,238,170)"/>
 		<type label="None" default="" length="0" sql="NONE" quote="" color="rgb(200,255,200)"/>
 	</group>
-</datatypes><table x="547" y="372" name="users">
+</datatypes><table x="554" y="357" name="users">
 <row name="id" null="0" autoincrement="1">
 <datatype>INTEGER</datatype>
 </row>
@@ -19,6 +19,24 @@
 </row>
 <row name="password" null="0" autoincrement="0">
 <datatype>TEXT(128)</datatype>
+</row>
+<key type="PRIMARY" name="">
+<part>id</part>
+</key>
+</table>
+<table x="248.33334350585938" y="358.66668701171875" name="packages">
+<row name="id" null="0" autoincrement="1">
+<datatype>INTEGER</datatype>
+</row>
+<row name="title" null="1" autoincrement="0">
+<datatype>TEXT(50)</datatype>
+<default>NULL</default></row>
+<row name="trackingNumber" null="0" autoincrement="0">
+<datatype>TEXT</datatype>
+</row>
+<row name="userID" null="0" autoincrement="0">
+<datatype>INTEGER</datatype>
+<relation table="users" row="id" />
 </row>
 <key type="PRIMARY" name="">
 <part>id</part>

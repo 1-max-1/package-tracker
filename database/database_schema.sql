@@ -3,3 +3,10 @@ CREATE TABLE 'users' (
 'email' TEXT(254) NOT NULL ,
 'password' TEXT(128) NOT NULL 
 );
+
+CREATE TABLE 'packages' (
+'id' INTEGER NOT NULL  PRIMARY KEY AUTOINCREMENT,
+'title' TEXT(50) DEFAULT NULL,
+'trackingNumber' TEXT NOT NULL ,
+'userID' INTEGER NOT NULL  REFERENCES 'users' ('id')
+);

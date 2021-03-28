@@ -1,0 +1,22 @@
+{% from "includes/form_renderer.html" import render_form %}
+{% extends "main_layout_container.html" %}
+{% block body %}
+	<!-- This form will submit to itself -->
+	<form action="" method="POST">
+		<!-- The renderer does all of the work of getting the fields and adding them to the html -->
+		{{render_form(form)}}
+		<input type="submit" class="btn btn-primary" style="display: inline;" value="Go"/>
+	</form>
+
+	<!-- Below the form, we render each package the user is tracking in a list. These are passed in -->
+	<ul class="list-group">	
+		{% if not packageList %}
+			<li class="list-group-item">You are not tracking any packages. Add one!</li>
+		<!-- If there are some things in the list then we loop through them -->
+		{% else %}
+			{% for package in packageList %}
+				<li class="list-group-item">{{ package["trackingNumber"] }}</li>
+			{% endfor %}
+		{% endif %}
+	</ul>
+{% endblock %}
