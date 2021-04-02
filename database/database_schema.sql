@@ -8,5 +8,11 @@ CREATE TABLE 'packages' (
 'id' INTEGER NOT NULL  PRIMARY KEY AUTOINCREMENT,
 'title' TEXT(50) DEFAULT NULL,
 'trackingNumber' TEXT NOT NULL ,
-'userID' INTEGER NOT NULL  REFERENCES 'users' ('id')
+'userID' INTEGER NOT NULL  REFERENCES 'users' ('id'),
+'last_updated' INTEGER(15) NOT NULL  DEFAULT 0
+);
+
+CREATE TABLE 'queue' (
+'id' INTEGER NOT NULL  PRIMARY KEY AUTOINCREMENT,
+'package_id' INTEGER NOT NULL  REFERENCES 'packages' ('id')
 );

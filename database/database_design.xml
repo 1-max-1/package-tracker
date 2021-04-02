@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <!-- SQL XML created by WWW SQL Designer, https://github.com/ondras/wwwsqldesigner/ -->
-<!-- Active URL: https://ondras.zarovi.cz/sql/demo/?keyword=default -->
+<!-- Active URL: https://ondras.zarovi.cz/sql/demo/ -->
 <sql>
 <datatypes db="sqlite">
 	<group label="Affinity">
@@ -10,7 +10,7 @@
 		<type label="Real" default="0" length="0" sql="REAL" quote="" color="rgb(238,238,170)"/>
 		<type label="None" default="" length="0" sql="NONE" quote="" color="rgb(200,255,200)"/>
 	</group>
-</datatypes><table x="554" y="357" name="users">
+</datatypes><table x="866" y="350" name="users">
 <row name="id" null="0" autoincrement="1">
 <datatype>INTEGER</datatype>
 </row>
@@ -24,7 +24,7 @@
 <part>id</part>
 </key>
 </table>
-<table x="248.33334350585938" y="358.66668701171875" name="packages">
+<table x="543" y="481" name="packages">
 <row name="id" null="0" autoincrement="1">
 <datatype>INTEGER</datatype>
 </row>
@@ -37,6 +37,21 @@
 <row name="userID" null="0" autoincrement="0">
 <datatype>INTEGER</datatype>
 <relation table="users" row="id" />
+</row>
+<row name="last_updated" null="0" autoincrement="0">
+<datatype>INTEGER(15)</datatype>
+<default>0</default></row>
+<key type="PRIMARY" name="">
+<part>id</part>
+</key>
+</table>
+<table x="323.3333740234375" y="394.3333435058594" name="queue">
+<row name="id" null="0" autoincrement="1">
+<datatype>INTEGER</datatype>
+</row>
+<row name="package_id" null="0" autoincrement="0">
+<datatype>INTEGER</datatype>
+<relation table="packages" row="id" />
 </row>
 <key type="PRIMARY" name="">
 <part>id</part>
