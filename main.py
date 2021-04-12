@@ -12,7 +12,8 @@ app = Flask(__name__)
 app.secret_key = environ["FLASK_KEY"]
 
 authenticator = Authenticator("database/database.db")
-packageHandler = PackageHandler("database/database.db")
+packageHandler = PackageHandler("database/database.db", "chromedriver89")
+# environ["CHROMEDRIVER_NAME"]
 
 @app.route('/')
 def hello_world():
