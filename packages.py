@@ -1,17 +1,13 @@
 import sqlite3
 from apscheduler.schedulers.background import BackgroundScheduler
-from time import time
-
-from requests import get as httpGetRequest
-from bs4 import BeautifulSoup
+from time import time, strftime, strptime
+from datetime import datetime
 
 # These create the browser and set the required options needed for it to function with parcelsapp
 from selenium.webdriver import Chrome
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.webdriver.chrome.options import Options
-
 # These are for waiting for the package data to appear
-#from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
@@ -34,6 +30,7 @@ class PackageHandler():
 		self.scheduler.start()
 
 		self.dbPath = dbPath
+		self.con = None
 
 		# Dont wait for full page load
 		caps = DesiredCapabilities().CHROME
@@ -42,7 +39,7 @@ class PackageHandler():
 		opts = Options()
 		opts.add_argument("--disable-blink-features=AutomationControlled")
 		self.browser = Chrome(chromeDriverName, desired_capabilities=caps, chrome_options=opts)
-		self.scrapePackageData("987271263865000564") # 91094210311903559338
+		self.scrapePackageData("91094210311903559338")
 
 	# Acts like a destructor
 	def __del__(self):
@@ -50,15 +47,22 @@ class PackageHandler():
 		self.browser.close()
 
 	def scrapePackageData(self, trackingNumber):
-		# page = httpGetRequest("https://parcelsapp.com/en/tracking/" + trackingNumber)
-		# soup = BeautifulSoup(page.content, "html.parser")
-		# print(soup.prettify())
-
 		self.browser.get("https://parcelsapp.com/en/tracking/" + str(trackingNumber))
-		print(WebDriverWait(self.browser, 30000).until(EC.presence_of_element_located(("css selector", ".list-unstyled"))))
-		print("Received data")
+		unorderedList = WebDriverWait(self.browser, 30000).until(EC.presence_of_element_located(("css selector", ".list-unstyled.events")))
+		for listItem in unorderedList.find_elements_by_tag_name("li"):
 
-	# Checks if any packages haven't been updated for more than 6 hours. If so, adds them to the queue
+			dateTimeDiv = listItem.find_element_by_css_selector("div.event-time")
+			#dateTimeDiv.find_element_by_tag_name("strong").text # "%d %b %Y %H:%M"
+			scrapedTime = dateTimeDiv.find_element_by_tag_name("span").text
+
+			#hourString = ""
+			# if int(scrapedTime[0]) > 12 and int(scrapedTime[0]) < 24:
+			# 	timeString += 
+
+			print(strptime(scrapedTime, "%H:%M"))
+			#listItem.find_element_by_css_selector("div.event-content").find_element_by_tag_name("strong").text
+
+	# Checks if any packages haven't been updated for more than 6 hou`rs. If so, adds them to the queue
 	@createDBConnection
 	def addOldPackagesToQueue(self):
 		# Create a cursor with results in dictionary format, and get all packages that haven't been
