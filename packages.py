@@ -1,7 +1,6 @@
 import sqlite3
 from apscheduler.schedulers.background import BackgroundScheduler
 from time import time, strftime, strptime
-from datetime import datetime
 
 # These create the browser and set the required options needed for it to function with parcelsapp
 from selenium.webdriver import Chrome
@@ -27,6 +26,7 @@ class PackageHandler():
 	def __init__(self, dbPath, chromeDriverName):
 		self.scheduler = BackgroundScheduler()
 		self.scheduler.add_job(self.addOldPackagesToQueue, "interval", seconds=45)
+		self.scheduler.add_job(self.scrapeNextInQueue, "interval", seconds=20)
 		self.scheduler.start()
 
 		self.dbPath = dbPath
@@ -38,33 +38,57 @@ class PackageHandler():
 		# This option needs to be set otherwise the automated browser will be detected by the website
 		opts = Options()
 		opts.add_argument("--disable-blink-features=AutomationControlled")
+		# Startup the browser
 		self.browser = Chrome(chromeDriverName, desired_capabilities=caps, chrome_options=opts)
-		self.scrapePackageData("91094210311903559338")
+		self.browser.get("https://google.com")
 
 	# Acts like a destructor
 	def __del__(self):
 		self.scheduler.shutdown()
 		self.browser.close()
 
-	def scrapePackageData(self, trackingNumber):
-		self.browser.get("https://parcelsapp.com/en/tracking/" + str(trackingNumber))
+	# Gets the top package on the queue - next in line. Proceeds to scrape the data for that package and add it to the db. Package is then removed from the queue and updated
+	@createDBConnection
+	def scrapeNextInQueue(self):
+		print("Scraping...")
+
+		# Get the package that is next in line for being scraped
+		cur = self.con.cursor()
+		cur.row_factory = sqlite3.Row # Dictionary format
+		cur.execute("SELECT queue.package_id AS id, packages.trackingNumber AS trackingNumber FROM queue INNER JOIN packages ON queue.package_id = packages.id LIMIT 1")
+		package = cur.fetchone()
+
+		if not package:
+			return
+
+		# Browse to the page that tracks our package
+		self.browser.get("https://parcelsapp.com/en/tracking/" + package["trackingNumber"])
+		# Wait until the data has been fetched - a <ul> element will appear on the page
 		unorderedList = WebDriverWait(self.browser, 30000).until(EC.presence_of_element_located(("css selector", ".list-unstyled.events")))
+		cur.execute("DELETE FROM package_data WHERE package_id = ?", [package["id"]]) # Remove all old data
+
 		for listItem in unorderedList.find_elements_by_tag_name("li"):
-
+			# This div holds 2 child elements containing the date and time of the package stage
 			dateTimeDiv = listItem.find_element_by_css_selector("div.event-time")
-			#dateTimeDiv.find_element_by_tag_name("strong").text # "%d %b %Y %H:%M"
-			scrapedTime = dateTimeDiv.find_element_by_tag_name("span").text
+			# We join the date and time together in 1 string, then pass it to this time parsing function
+			parsedTime = strptime(dateTimeDiv.find_element_by_tag_name("strong").text + " " + dateTimeDiv.find_element_by_tag_name("span").text, "%d %b %Y %H:%M")
+			# The data is what the package stage is actually about, things like Delivered, In Transit To Local Depot, Arrive at destination country etc.
+			data = listItem.find_element_by_css_selector("div.event-content").find_element_by_tag_name("strong").text
 
-			#hourString = ""
-			# if int(scrapedTime[0]) > 12 and int(scrapedTime[0]) < 24:
-			# 	timeString += 
+			# Once we have all of the info we can insert it into the db
+			cur.execute("INSERT INTO package_data (package_id, date, time, data) VALUES (?, ?, ?, ?)", [package["id"], strftime("%a %d %b %Y", parsedTime), strftime("%I:%M %p", parsedTime), data])
 
-			print(strptime(scrapedTime, "%H:%M"))
-			#listItem.find_element_by_css_selector("div.event-content").find_element_by_tag_name("strong").text
+		# This package doesn't need to be updated for another 6 hours
+		cur.execute("DELETE FROM queue WHERE package_id = ?", [package["id"]])
+		cur.execute("UPDATE packages SET last_updated = ? WHERE id = ?", [time(), package["id"]])
+		cur.close()
+		self.con.commit()
 
 	# Checks if any packages haven't been updated for more than 6 hou`rs. If so, adds them to the queue
 	@createDBConnection
 	def addOldPackagesToQueue(self):
+		print("Adding old packages to queue")
+		
 		# Create a cursor with results in dictionary format, and get all packages that haven't been
 		# updated for 6 hours, and are not already in the queue.
 		cur = self.con.cursor()

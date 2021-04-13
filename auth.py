@@ -14,7 +14,8 @@ def createDBConnection(func):
 
 class Authenticator():
 	def __init__(self, dbPath):
-		self.dbPath = dbPath	
+		self.dbPath = dbPath
+		self.con = None	
 
 	# Validates the login details - return true if they are correct
 	def verifyLogin(self, email, passwordAttempt: str):

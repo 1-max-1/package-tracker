@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <!-- SQL XML created by WWW SQL Designer, https://github.com/ondras/wwwsqldesigner/ -->
-<!-- Active URL: https://ondras.zarovi.cz/sql/demo/ -->
+<!-- Active URL: https://ondras.zarovi.cz/sql/demo/?keyword=default -->
 <sql>
 <datatypes db="sqlite">
 	<group label="Affinity">
@@ -24,7 +24,7 @@
 <part>id</part>
 </key>
 </table>
-<table x="543" y="481" name="packages">
+<table x="567" y="516" name="packages">
 <row name="id" null="0" autoincrement="1">
 <datatype>INTEGER</datatype>
 </row>
@@ -45,13 +45,34 @@
 <part>id</part>
 </key>
 </table>
-<table x="323.3333740234375" y="394.3333435058594" name="queue">
+<table x="323" y="394" name="queue">
 <row name="id" null="0" autoincrement="1">
 <datatype>INTEGER</datatype>
 </row>
 <row name="package_id" null="0" autoincrement="0">
 <datatype>INTEGER</datatype>
 <relation table="packages" row="id" />
+</row>
+<key type="PRIMARY" name="">
+<part>id</part>
+</key>
+</table>
+<table x="286" y="651" name="package_data">
+<row name="id" null="0" autoincrement="1">
+<datatype>INTEGER</datatype>
+</row>
+<row name="package_id" null="0" autoincrement="0">
+<datatype>INTEGER</datatype>
+<relation table="packages" row="id" />
+</row>
+<row name="date" null="0" autoincrement="0">
+<datatype>TEXT(12)</datatype>
+</row>
+<row name="time" null="0" autoincrement="0">
+<datatype>TEXT(8)</datatype>
+</row>
+<row name="data" null="0" autoincrement="0">
+<datatype>TEXT</datatype>
 </row>
 <key type="PRIMARY" name="">
 <part>id</part>

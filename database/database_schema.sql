@@ -16,3 +16,11 @@ CREATE TABLE 'queue' (
 'id' INTEGER NOT NULL  PRIMARY KEY AUTOINCREMENT,
 'package_id' INTEGER NOT NULL  REFERENCES 'packages' ('id')
 );
+
+CREATE TABLE 'package_data' (
+'id' INTEGER NOT NULL  PRIMARY KEY AUTOINCREMENT,
+'package_id' INTEGER NOT NULL  REFERENCES 'packages' ('id'),
+'date' TEXT(12) NOT NULL ,
+'time' TEXT(8) NOT NULL ,
+'data' TEXT NOT NULL 
+);
