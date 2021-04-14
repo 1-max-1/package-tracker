@@ -25,33 +25,33 @@ class PackageHandler():
 	# The constructor creates the schedulers
 	def __init__(self, dbPath, chromeDriverName):
 		self.scheduler = BackgroundScheduler()
-		self.scheduler.add_job(self.addOldPackagesToQueue, "interval", seconds=45)
-		self.scheduler.add_job(self.scrapeNextInQueue, "interval", seconds=20)
-		self.scheduler.start()
+		# self.scheduler.add_job(self.addOldPackagesToQueue, "interval", seconds=45)
+		# self.scheduler.add_job(self.scrapeNextInQueue, "interval", seconds=20)
+		# self.scheduler.start()
 
 		self.dbPath = dbPath
 		self.con = None
 
-		# Dont wait for full page load
-		caps = DesiredCapabilities().CHROME
-		caps["pageLoadStrategy"] = "none"
-		# This option needs to be set otherwise the automated browser will be detected by the website
-		opts = Options()
-		opts.add_argument("--disable-blink-features=AutomationControlled")
-		# Startup the browser
-		self.browser = Chrome(chromeDriverName, desired_capabilities=caps, chrome_options=opts)
-		self.browser.get("https://google.com")
+		# # Dont wait for full page load
+		# caps = DesiredCapabilities().CHROME
+		# caps["pageLoadStrategy"] = "none"
+		# # This option needs to be set otherwise the automated browser will be detected by the website
+		# opts = Options()
+		# opts.add_argument("--disable-blink-features=AutomationControlled")
+		# # Startup the browser
+		# self.browser = Chrome(chromeDriverName, desired_capabilities=caps, chrome_options=opts)
+		# self.browser.get("https://google.com")
+		self.browser = None
 
 	# Acts like a destructor
 	def __del__(self):
-		self.scheduler.shutdown()
-		self.browser.close()
+		# self.scheduler.shutdown()
+		# self.browser.close()
+		pass
 
 	# Gets the top package on the queue - next in line. Proceeds to scrape the data for that package and add it to the db. Package is then removed from the queue and updated
 	@createDBConnection
 	def scrapeNextInQueue(self):
-		print("Scraping...")
-
 		# Get the package that is next in line for being scraped
 		cur = self.con.cursor()
 		cur.row_factory = sqlite3.Row # Dictionary format
@@ -86,9 +86,7 @@ class PackageHandler():
 
 	# Checks if any packages haven't been updated for more than 6 hou`rs. If so, adds them to the queue
 	@createDBConnection
-	def addOldPackagesToQueue(self):
-		print("Adding old packages to queue")
-		
+	def addOldPackagesToQueue(self):		
 		# Create a cursor with results in dictionary format, and get all packages that haven't been
 		# updated for 6 hours, and are not already in the queue.
 		cur = self.con.cursor()
@@ -114,7 +112,7 @@ class PackageHandler():
 			return False
 
 		# If they aren't tracking the package, then we insert it into the db
-		cur = self.con.cursor()
+		cur = self.con.cursor() # New cursor to avoid conflicts with different operation types
 		cur.execute("INSERT INTO packages (trackingNumber, userID) VALUES (?, ?)", [trackingNumber, userID])
 		self.con.commit()
 		cur.close()
@@ -127,6 +125,23 @@ class PackageHandler():
 		cur.row_factory = sqlite3.Row # Dictionary format
 		
 		cur.execute("SELECT * FROM packages WHERE userID = ?", [userID])
+		result = cur.fetchall()
+		cur.close()
+		return result
+
+	@createDBConnection
+	def getPackageData(self, packageID, userID):
+		cur = self.con.cursor() # Dictionary format cursor
+		cur.row_factory = sqlite3.Row
+
+		# Check that the package is associated with this user. If not, return false.
+		cur.execute("SELECT packages.id FROM packages INNER JOIN users ON users.id = packages.userID WHERE users.id = ? AND packages.id = ?", [userID, packageID])
+		if not cur.fetchone():
+			return False
+
+		# Return all stages in the packages journey with date, time and the description of the event
+		# The package title is added to the top of the result. Order by reverse order so data is in date order
+		cur.execute("SELECT id, date, time, data FROM package_data WHERE package_id = ? UNION SELECT 0, COALESCE(title, trackingNumber) AS title, NULL, NULL FROM packages WHERE id = ?", [packageID, packageID])
 		result = cur.fetchall()
 		cur.close()
 		return result

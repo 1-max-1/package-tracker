@@ -1,0 +1,22 @@
+{% from "includes/form_renderer.html" import render_form %}
+{% extends "main_layout_container.html" %}
+{% block body %}
+	<!-- The package title will be in the first record in the list under the id column.
+		This is due to the SQL query in packages.getPackageData -->
+	<h1>{{ packageData[0]["date"] }}</h1>
+
+	<!-- The data for each package stage is passed in as a list of dicts -->
+	<ul class="list-group">	
+		{% if packageData|length < 2 %}
+			<li class="list-group-item">There is no tracking data for this package yet. Please try again later.</li>
+		<!-- If there are some things in the list then we loop through them -->
+		{% else %}
+			{% for data in packageData[1:] %}
+				<li class="list-group-item">
+					<p class="d-inline-block">{{ data["date"] }} {{ data["time"] }}</p>
+					<p class="d-inline-block">      {{ data["data"] }}</p>
+				</li>
+			{% endfor %}
+		{% endif %}
+	</ul>
+{% endblock %}

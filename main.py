@@ -24,9 +24,9 @@ def hello_world():
 # See here: https://realpython.com/primer-on-python-decorators/
 def login_required(func):
 	@wraps(func) # This decorator copies over function attributes like __name__, docstring etc. required by flask for some reason
-	def wrapper():
+	def wrapper(*args, **kwargs):
 		if "userID" in session and session["userID"] > 0:
-			return func()
+			return func(*args, **kwargs)
 		else:
 			flash("You need to log in to do that!", "danger")
 			return redirect(url_for("login"))
@@ -109,6 +109,20 @@ def packageList():
 	# If the request is just a get request, then we can just render the list of packages
 	packageListDict = packageHandler.getListOfPackages(session["userID"])
 	return render_template("packageList.html", form=form, packageList=packageListDict)
+
+@app.route("/packageDetails/<int:packageID>")
+@login_required
+def viewPackage(packageID):
+	packageData = packageHandler.getPackageData(packageID, session["userID"])
+
+	# Make sure that the supplied package id is in the list of packages that this user is tracking
+	# thr getPackageData function does this automatically for us
+	if not packageData:
+		flash("You are not tracking that package. Add it!", "primary")
+		return redirect(url_for("packageList"))
+
+	# Pass the data to the template where it will be iterated over and rendered
+	return render_template("packageData.html", packageData=packageData)
 
 if __name__ == "__main__":
 	app.run(debug=True, use_reloader=False)

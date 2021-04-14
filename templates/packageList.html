@@ -15,7 +15,10 @@
 		<!-- If there are some things in the list then we loop through them -->
 		{% else %}
 			{% for package in packageList %}
-				<li class="list-group-item">{{ package["trackingNumber"] }}</li>
+				<li class="list-group-item">
+					<p class="d-inline-block">{{ package["trackingNumber"] }}</p>
+					<a role="button" class="btn btn-outline-primary" href="/packageDetails/{{package['id']}}">View details</a>
+				</li>
 			{% endfor %}
 		{% endif %}
 	</ul>
