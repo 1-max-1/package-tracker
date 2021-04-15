@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <!-- SQL XML created by WWW SQL Designer, https://github.com/ondras/wwwsqldesigner/ -->
-<!-- Active URL: https://ondras.zarovi.cz/sql/demo/?keyword=default -->
+<!-- Active URL: https://ondras.zarovi.cz/sql/demo/ -->
 <sql>
 <datatypes db="sqlite">
 	<group label="Affinity">
@@ -34,7 +34,7 @@
 <row name="trackingNumber" null="0" autoincrement="0">
 <datatype>TEXT</datatype>
 </row>
-<row name="userID" null="0" autoincrement="0">
+<row name="user_id" null="0" autoincrement="0">
 <datatype>INTEGER</datatype>
 <relation table="users" row="id" />
 </row>
@@ -73,6 +73,26 @@
 </row>
 <row name="data" null="0" autoincrement="0">
 <datatype>TEXT</datatype>
+</row>
+<key type="PRIMARY" name="">
+<part>id</part>
+</key>
+</table>
+<table x="805" y="602.3333435058594" name="pending_users">
+<row name="id" null="0" autoincrement="1">
+<datatype>INTEGER</datatype>
+</row>
+<row name="email" null="0" autoincrement="0">
+<datatype>TEXT(254)</datatype>
+</row>
+<row name="password" null="0" autoincrement="0">
+<datatype>TEXT(128)</datatype>
+</row>
+<row name="verification_token" null="0" autoincrement="0">
+<datatype>TEXT(32)</datatype>
+</row>
+<row name="time_created" null="0" autoincrement="0">
+<datatype>INTEGER(15)</datatype>
 </row>
 <key type="PRIMARY" name="">
 <part>id</part>

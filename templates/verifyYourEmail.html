@@ -1,0 +1,14 @@
+{% extends "main_layout_container.html" %}
+{% block body %}
+	<h2 class="text-center">Verify your email address</h2>
+	<p class="text-center">You're almost there! There's just one more step - we sent an email to the address you provided (<i>{{email}}</i>).</p>
+	<p class="text-center">Please click the link contained in the email to verify your account. Once this is completed you can login.</p>
+	<p class="text-center d-inline-block">Didn't get the email?</p>
+
+	<form action="/register" method="POST">
+		<button type="submit" class="btn btn-outline-primary">Resend</button>
+		<input type="hidden" name="email" id="email" value="{{ email }}" />
+		<input type="hidden" name="password" id="password" value="{{ password }}" />
+		<input type="hidden" name="passwordConfirmation" id="passwordConfirmation" value="{{ password }}" />
+	</form>
+{% endblock %}

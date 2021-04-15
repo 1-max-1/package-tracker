@@ -105,7 +105,7 @@ class PackageHandler():
 		# First we check if the user is already tracking this package
 		cur = self.con.cursor()
 		cur.row_factory = sqlite3.Row # Dictionary format
-		cur.execute("SELECT id FROM packages WHERE userID = ? AND trackingNumber = ?", [userID, trackingNumber])
+		cur.execute("SELECT id FROM packages WHERE user_id = ? AND trackingNumber = ?", [userID, trackingNumber])
 		result = cur.fetchone()
 		cur.close()
 		if result:
@@ -113,7 +113,7 @@ class PackageHandler():
 
 		# If they aren't tracking the package, then we insert it into the db
 		cur = self.con.cursor() # New cursor to avoid conflicts with different operation types
-		cur.execute("INSERT INTO packages (trackingNumber, userID) VALUES (?, ?)", [trackingNumber, userID])
+		cur.execute("INSERT INTO packages (trackingNumber, user_id) VALUES (?, ?)", [trackingNumber, userID])
 		self.con.commit()
 		cur.close()
 		return True
@@ -124,7 +124,7 @@ class PackageHandler():
 		cur = self.con.cursor()
 		cur.row_factory = sqlite3.Row # Dictionary format
 		
-		cur.execute("SELECT * FROM packages WHERE userID = ?", [userID])
+		cur.execute("SELECT * FROM packages WHERE user_id = ?", [userID])
 		result = cur.fetchall()
 		cur.close()
 		return result
@@ -135,7 +135,7 @@ class PackageHandler():
 		cur.row_factory = sqlite3.Row
 
 		# Check that the package is associated with this user. If not, return false.
-		cur.execute("SELECT packages.id FROM packages INNER JOIN users ON users.id = packages.userID WHERE users.id = ? AND packages.id = ?", [userID, packageID])
+		cur.execute("SELECT packages.id FROM packages INNER JOIN users ON users.id = packages.user_id WHERE users.id = ? AND packages.id = ?", [userID, packageID])
 		if not cur.fetchone():
 			return False
 
