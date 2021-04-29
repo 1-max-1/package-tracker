@@ -6,12 +6,14 @@ from forms import LoginForm, RegisterForm, AddPackageForm
 
 from auth import Authenticator
 from packages import PackageHandler
+from emails import EmailHandler
 
 app = Flask(__name__)
 # A key is needed for some operations. In particular, for wt forms to protect against CSRF
 app.secret_key = environ["FLASK_KEY"]
 
-authenticator = Authenticator("database/database.db")
+emailHandler = EmailHandler()
+authenticator = Authenticator("database/database.db", emailHandler)
 packageHandler = PackageHandler("database/database.db", environ["CHROMEDRIVER_NAME"])
 
 @app.route('/')
@@ -67,22 +69,17 @@ def logout():
 	flash("You have been logged out!", "primary")
 	return redirect(url_for("login"))
 
-# Doing 2 routes allows the paramter to be optional
 @app.route("/register", methods=["GET", "POST"])
-#@app.route("/register/<string:autoFillEmailData>", methods=["GET", "POST"])
-def register(): #autoFillEmailData=""
+def register():
 	# The form instance will be automatically filled with data if there is data
 	form = RegisterForm()
 
 	# Validate the form and check that it was submitted (POST request). We dont want to make a new
 	# user for a get request (not submitted).
-
-	print(form.validate())
-	print(form.is_submitted())
-
 	if form.validate_on_submit():
-		print("Validated POST")
-		if authenticator.createNewPendingUser(form.email.data, form.password.data):
+		#print("Validated POST")
+		pendingUserID = authenticator.createNewPendingUser(form.email.data, form.password.data)
+		if pendingUserID:
 			# If the user does not already exist then it was a success and we can redirect them
 			# to the next page, which will tell them that they need to verify their email address
 			return render_template("verifyYourEmail.html", email=form.email.data, password=form.password.data)
@@ -93,10 +90,6 @@ def register(): #autoFillEmailData=""
 			# the form wont be cached and wont resubmit. Then they wont have to click that popup every time
 			return redirect(url_for("register"))
 
-	print("DOWN HERE")
-
-	#if autoFillEmailData != "":
-		#form.email.data = autoFillEmailData
 	# If the request was not submitted (or the user already exists) then we can just render the form normally.
 	return render_template("register.html", form=form)
 
@@ -133,24 +126,33 @@ def viewPackage(packageID):
 	# Pass the data to the template where it will be iterated over and rendered
 	return render_template("packageData.html", packageData=packageData)
 
-@app.route("/verifyEmailAddress/<string:email>")
-def verifyEmailAddress(email):
-	return render_template("verifyYourEmail.html", email=email)
-
 @app.route("/confirmUserEmail/<string:token>")
 def confirmUserEmail(token):
 	# Returns false if failed, otherwise returns the ID of the new user
 	userID = authenticator.createNewUser(token)
 	if not userID:
 		flash("This link is either invalid or has expired. Please re-register.", "warning")
-		return redirect(url_for(register))
+		return redirect(url_for("register"))
 	# If it was a success then we can log them in
 	else:
 		# We can store the user ID as we will need it later for querying all of the packages for the user.
 		# We then redirect them to the list of their packages
 		session["userID"] = userID
-		flash("Login successful!", "success")
+		flash("Verification successful! You are now logged in.", "success")
 		return redirect(url_for("packageList"))
+
+# Will resend the email for a password reset or email verification.
+# The resend type specifies whether it is for a pending user or password reset.
+@app.route("/resendEmail/<int:resendType>/<string:email>")
+def resendEmail(resendType, email):
+	# Email verification
+	if resendType == 1:
+		if not authenticator.sendEmailVerificationEmail(email):
+			flash("Something went wrong and we couldn't resend the email. You may need to re-register.", "danger")
+		return render_template("verifyYourEmail.html", email=email)
+	# Password reset
+	elif resendType == 2:
+		pass
 
 if __name__ == "__main__":
 	app.run(debug=True, use_reloader=False)
