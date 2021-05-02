@@ -29,7 +29,7 @@ class Authenticator():
 
 		# This will schedule a job that purges any accounts that have not been verified within half an hour
 		self.scheduler = BackgroundScheduler()
-		self.scheduler.add_job(self.removeExpiredPendingUsers, "interval", seconds=120)
+		self.scheduler.add_job(self.removeExpiredTokens, "interval", seconds=120)
 		self.scheduler.start()
 
 	# Free scheduler resources when all references to the authenticator have been deleted
@@ -74,6 +74,7 @@ class Authenticator():
 		return self.userExists(result["email"])["id"]
 
 	# Checks if the user exists. If not, returns false. Otherwise returns user ID and password
+	@createDBConnection
 	def userExists(self, email):
 		# First we can get out the user details from the database
 		cur = self.con.cursor()
@@ -102,13 +103,49 @@ class Authenticator():
 		cur.execute("DELETE FROM pending_users WHERE email = ?", [email])
 		cur.execute("INSERT INTO pending_users (email, password, verification_token, time_created) VALUES (?, ?, ?, ?)", [email, sha256_crypt.hash(password), uuid4().hex, time()])
 		self.con.commit()
-
-		# Return the ID of the newly created pending user
-		# cur.execute("SELECT id FROM pending_users WHERE email = ?", [email])
-		# result = cur.fetchone()
 		cur.close()
+		
 		self.sendEmailVerificationEmail(email)
 		return True
+
+	@createDBConnection
+	def createPasswordResetRequest(self, email):
+		user = self.userExists(email)
+		if not user:
+			return False
+
+		# Get a cursor, delete any existing password resets for this user and create a new one with a unique token
+		cur = self.con.cursor()
+		cur.execute("DELETE FROM password_resets WHERE user_id = ?", [user["id"]])
+		cur.execute("INSERT INTO password_resets VALUES (?, ?, ?)", [user["id"], uuid4().hex, time()])
+		self.con.commit()
+		cur.close()
+
+		self.sendPasswordResetEmail(email)
+		return True
+
+	# Updates password for specified user
+	@createDBConnection
+	def updatePassword(self, userID, password):
+		cur = self.con.cursor()
+		cur.execute("UPDATE users SET password = ? WHERE id = ?", [sha256_crypt.hash(password), userID])
+		cur.execute("DELETE FROM password_resets WHERE user_id = ?", [userID])
+		self.con.commit()
+		cur.close()
+
+	# Will check if the passed token is still valid for a password reset 
+	@createDBConnection
+	def verifyPasswordResetToken(self, token):
+		cur = self.con.cursor()
+		cur.row_factory = sqlite3.Row
+
+		# Get a user id for the token
+		cur.execute("SELECT user_id FROM password_resets WHERE token = ?", [token])
+		result = cur.fetchone()
+
+		# If there was no user id then the token does not exist
+		# If it does exist then we can return it
+		return (False if not result else result["user_id"])
 
 	# Retrieves verification token associated with pending user email and passes it to email handler
 	@createDBConnection
@@ -127,13 +164,29 @@ class Authenticator():
 		self.emailHandler.sendVerificationEmail(email, result["verification_token"])
 		return True
 
-	# Purges any accounts that have not been verified within half an hour
 	@createDBConnection
-	def removeExpiredPendingUsers(self):
-		print("Purging old tokens")
-		print(time())
+	def sendPasswordResetEmail(self, email):
+		# Join the password resets table to the users table. Get the token from the passed email - emails are unique so this is fine
+		cur = self.con.cursor()
+		cur.row_factory = sqlite3.Row
+		cur.execute("SELECT pr.token FROM password_resets pr INNER JOIN users ON users.id = pr.user_id WHERE users.email = ?", [email])
+		result = cur.fetchone()
+		cur.close()
 
+		# Again, if there is no result then this function will have been called because someone tried to manipulate the URL
+		# EIther that or the thing expired already somehow
+		if not result:
+			return False
+
+		self.emailHandler.sendPasswordResetEmail(email, result["token"])
+		return True
+
+	# Purges any accounts that have not been verified within half an hour
+	# Does the ame thing with password resets
+	@createDBConnection
+	def removeExpiredTokens(self):
 		cur = self.con.cursor()
 		cur.execute("DELETE FROM pending_users WHERE ? - time_created > 1800", [time()])
+		cur.execute("DELETE FROM password_resets WHERE ? - time_created > 1800", [time()])
 		self.con.commit()
 		cur.close()

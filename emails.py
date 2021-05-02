@@ -6,7 +6,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 class EmailHandler:
-	# WHen the class is initiated it will create a connection to google's smtp server
+	# When the class is initiated it will create a connection to google's smtp server
 	def __init__(self):
 		self.sslContext = create_default_context()
 		self.emailServer = smtplib.SMTP_SSL("smtp.gmail.com", 465, context=self.sslContext)
@@ -36,4 +36,27 @@ This link will expire in 30 minutes.
 </body>
 </html>""", "html"))
 
+		self.emailServer.sendmail("flask19181@gmail.com", recipient, message.as_string())
+
+	def sendPasswordResetEmail(self, recipient, token):
+		# Setup the message
+		message = MIMEMultipart("alternative")
+		message["Subject"] = "Password reset request"
+		message["From"] = "flask19181@gmail.com"
+		message["To"] = recipient
+
+		# Add the content and send it
+		message.attach(MIMEText(f"""
+<html>
+<body>
+<p>
+There was a request to reset your password. Click the link below to change it.
+<br/><br/><a href="http://127.0.0.1:5000/resetPassword/{token}">http://127.0.0.1:5000/resetPassword/{token}</a><br/><br/>
+If it doesn't work try copying the address and entering it in a browsers search bar.
+This link will expire in 30 minutes.
+
+If this wasn't you, don't worry. Your account and password is safe. You can safely ignore this email.
+</p>
+</body>
+</html>""", "html"))
 		self.emailServer.sendmail("flask19181@gmail.com", recipient, message.as_string())

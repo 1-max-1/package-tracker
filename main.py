@@ -2,7 +2,7 @@ from os import environ
 from functools import wraps
 
 from flask import Flask, render_template, session, flash, redirect, url_for
-from forms import LoginForm, RegisterForm, AddPackageForm
+import forms
 
 from auth import Authenticator
 from packages import PackageHandler
@@ -39,7 +39,7 @@ def login_required(func):
 @app.route("/login", methods=["GET", "POST"])
 def login():
 	# The form instance will be automatically filled with data if there is data
-	form = LoginForm()
+	form = forms.LoginForm()
 	# Validate the form and check that it was submitted with a POST request
 	if form.validate_on_submit():
 
@@ -72,18 +72,15 @@ def logout():
 @app.route("/register", methods=["GET", "POST"])
 def register():
 	# The form instance will be automatically filled with data if there is data
-	form = RegisterForm()
+	form = forms.RegisterForm()
 
 	# Validate the form and check that it was submitted (POST request). We dont want to make a new
 	# user for a get request (not submitted).
 	if form.validate_on_submit():
-		#print("Validated POST")
-		pendingUserID = authenticator.createNewPendingUser(form.email.data, form.password.data)
-		if pendingUserID:
+		if authenticator.createNewPendingUser(form.email.data, form.password.data):
 			# If the user does not already exist then it was a success and we can redirect them
 			# to the next page, which will tell them that they need to verify their email address
-			return render_template("verifyYourEmail.html", email=form.email.data, password=form.password.data)
-			#return redirect(url_for("verifyEmailAddress", email=form.email.data))
+			return render_template("verifyYourEmail.html", email=form.email.data)
 		else:
 			flash("That user already exists!", "danger")
 			# Need to redirect them back to this page so that if they reload it,
@@ -96,7 +93,7 @@ def register():
 @app.route("/packageList", methods=["GET", "POST"])
 @login_required
 def packageList():
-	form = AddPackageForm()
+	form = forms.AddPackageForm()
 	# If the form was submitted with a POST request then the user is adding a package
 	if form.validate_on_submit():
 		if packageHandler.createNewPackage(form.trackingCode.data, session["userID"]):
@@ -152,7 +149,47 @@ def resendEmail(resendType, email):
 		return render_template("verifyYourEmail.html", email=email)
 	# Password reset
 	elif resendType == 2:
-		pass
+		if not authenticator.sendPasswordResetEmail(email):
+			flash("Something went wrong and we couldn't resend the email. You may need to redo the passwod reset.", "danger")
+		return render_template("forgotPasswordStep2.html", email=email)
+
+@app.route("/forgotPassword", methods=["GET", "POST"])
+def forgotPassword():
+	# As the form inherits from flask form, the constructor will use flasks request variable to
+	# automatically fill the form with data. If it is just a get request then nothing will happen
+	form = forms.ForgotPasswordForm()
+
+	# If the form is a post request (and validated) then the user is sending it to reset their password
+	if form.validate_on_submit():
+		if authenticator.createPasswordResetRequest(form.email.data):
+			# If it was successfull then we can show them what to do next
+			return render_template("forgotPasswordStep2.html", email=form.email.data)
+		else:
+			# If it wasn't successull, then there is one reason: the passed email does not exist
+			flash("There is no account with that email!", "danger")
+			return redirect(url_for("forgotPassword")) # Redirect so we can go to the GET side of page
+
+	# If it was just a get request or a failed post request then we just render the form with it's errors
+	return render_template("forgotPassword.html", form=form)
+
+@app.route("/resetPassword/<string:token>", methods=["GET", "POST"])
+def resetPassword(token):
+	# If the token is still valid then this will return user ID. Otherwise it will return false
+	userID = authenticator.verifyPasswordResetToken(token)
+	# We cant do anything if the token isnt valid - redirect back to forgot pasword page so they can redo it
+	if not userID:
+		flash("That link is either invalid or expired. You will need to redo the reset proccess.", "danger")
+		return redirect(url_for("forgotPassword"))
+
+	# Now that we have validated the token, we create a form. If the request is a POST then the inherited
+	# constructor will automatically fill out the form with the correct data.
+	form = forms.ResetPasswordForm()
+	# We do the logic on a POST request because that means the user has filled out the form and submitted it
+	if form.validate_on_submit():
+		authenticator.updatePassword(userID, form.password.data)
+		return redirect(url_for("login"))
+
+	return render_template("enterNewPassword.html", form=form)
 
 if __name__ == "__main__":
 	app.run(debug=True, use_reloader=False)

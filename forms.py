@@ -16,3 +16,10 @@ class RegisterForm(FlaskForm):
 
 class AddPackageForm(FlaskForm):
 	trackingCode = StringField("Tracking number", validators=[DataRequired()])
+
+class ForgotPasswordForm(FlaskForm):
+	email = StringField("Email", validators=[DataRequired(), Email(), Length(min=3, max=254)])
+
+class ResetPasswordForm(FlaskForm):
+	password = PasswordField("Password", validators=[DataRequired(), Length(min=8, max=128)])
+	passwordConfirmation = PasswordField("Confirm password", validators=[DataRequired(), Length(min=8, max=128), EqualTo("password", "Passwords do not match")])

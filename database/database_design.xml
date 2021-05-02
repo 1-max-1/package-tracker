@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <!-- SQL XML created by WWW SQL Designer, https://github.com/ondras/wwwsqldesigner/ -->
-<!-- Active URL: https://ondras.zarovi.cz/sql/demo/ -->
+<!-- Active URL: https://ondras.zarovi.cz/sql/demo/?keyword=default -->
 <sql>
 <datatypes db="sqlite">
 	<group label="Affinity">
@@ -78,7 +78,7 @@
 <part>id</part>
 </key>
 </table>
-<table x="805" y="602.3333435058594" name="pending_users">
+<table x="844" y="583" name="pending_users">
 <row name="id" null="0" autoincrement="1">
 <datatype>INTEGER</datatype>
 </row>
@@ -96,6 +96,21 @@
 </row>
 <key type="PRIMARY" name="">
 <part>id</part>
+</key>
+</table>
+<table x="1124" y="373.3333282470703" name="password_resets">
+<row name="user_id" null="0" autoincrement="0">
+<datatype>INTEGER</datatype>
+<relation table="users" row="id" />
+</row>
+<row name="token" null="0" autoincrement="0">
+<datatype>TEXT(32)</datatype>
+</row>
+<row name="time_created" null="0" autoincrement="0">
+<datatype>INTEGER(15)</datatype>
+<default>0</default></row>
+<key type="PRIMARY" name="">
+<part>user_id</part>
 </key>
 </table>
 </sql>

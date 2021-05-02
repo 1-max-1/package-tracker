@@ -32,3 +32,9 @@ CREATE TABLE 'pending_users' (
 'verification_token' TEXT(32) NOT NULL ,
 'time_created' INTEGER(15) NOT NULL 
 );
+
+CREATE TABLE 'password_resets' (
+'user_id' INTEGER NOT NULL  PRIMARY KEY REFERENCES 'users' ('id'),
+'token' TEXT(32) NOT NULL ,
+'time_created' INTEGER(15) NOT NULL  DEFAULT 0
+);
