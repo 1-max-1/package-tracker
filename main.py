@@ -1,7 +1,7 @@
 from os import environ
 from functools import wraps
 
-from flask import Flask, render_template, session, flash, redirect, url_for
+from flask import Flask, render_template, session, flash, redirect, url_for, request
 import forms
 
 from auth import Authenticator
@@ -190,6 +190,19 @@ def resetPassword(token):
 		return redirect(url_for("login"))
 
 	return render_template("enterNewPassword.html", form=form)
+
+# This endpoint is for handling ajax requests from the UI.
+# the ajax request is initiated when the user wants to change the title for one of their packages.
+@app.route("/updatePackageTitle", methods=["POST"])
+def updatePackageTitle():
+	# If they dont have a user ID in their session then they are not logged in, which means they are
+	# manipulating the URL. HAXXXXX block them from it.
+	if "userID" not in session:
+		return "0"
+
+	# Update the package with the data. We just pass on what the updatePackage function returned.
+	# it will send back "0" if it failed or the new package title on a success.
+	return packageHandler.updatePackageTitle(request.form["packageID"], session["userID"], request.form["newTitle"])
 
 if __name__ == "__main__":
 	app.run(debug=True, use_reloader=False)

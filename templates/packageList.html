@@ -1,6 +1,62 @@
 {% from "includes/form_renderer.html" import render_form %}
 {% extends "main_layout_container.html" %}
 {% block body %}
+	<script type="text/javascript">
+		// When the modal's submit button is clicked, we need some way of getting the package ID that
+		// the modal is for. This function is called just before the modal is opened. It will put the
+		// package ID into a hidden input on the modal so it can be retrieved later.
+		function assignPackageIDToModal(packageID) {
+			$(".packageIDHolder").val(parseInt(packageID));
+		}
+
+		// Called when the user clicks the dialog button to rename their package
+		function updateTitle() {
+			// Disable the 3 buttons
+			$("#xButton").prop("disabled", true);
+			$("#cancelButton").prop("disabled", true);
+			$("#updateButton").prop("disabled", true);
+
+			// Add HTML - this is a little bootstrap spinner loading thing
+			$("#updateTitleModalFooter").append('<div class="spinner-border text-primary" role="status" id="spinner"><span class="visually-hidden">Loading...</span></div>');
+			// Make the error message hidden - new request, no error
+			$("#titleUpdateErrorMessage").removeClass("d-inline");
+			$("#titleUpdateErrorMessage").addClass("d-none");
+
+			var packageID = $(".packageIDHolder").val();
+
+			// This request will send the request to the flask endpoint
+			var xhttp = new XMLHttpRequest();
+  			xhttp.onreadystatechange = () => {
+				// State = 4 means request has completed
+    			if (xhttp.readyState == 4) {
+					// Remove loading indicator and re-enable all of the buttons
+      				$("#spinner").remove();
+					$("#xButton").prop("disabled", false);
+					$("#cancelButton").prop("disabled", false);
+					$("#updateButton").prop("disabled", false);
+
+					// If the request was a success then we can hide the modal
+					if(xhttp.status == 200 && xhttp.responseText != "0") {
+						// Update the package label with the new title
+						$("#packageLabel-" + packageID).text(xhttp.responseText);
+						bootstrap.Modal.getInstance(document.getElementById("titleInputModal")).hide();
+					}
+					// If it failed then we show the error messge
+					else {
+						$("#titleUpdateErrorMessage").removeClass("d-none");
+						$("#titleUpdateErrorMessage").addClass("d-inline");
+					}
+    			}
+  			};
+
+			// Send the request to flask - contains new title and package ID
+			// Encode the paramters to stay safe :-) !!!
+			xhttp.open("POST", "updatePackageTitle", true);
+			xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+			xhttp.send("newTitle=" + encodeURIComponent($("#new-title-input").val()) + "&packageID=" + encodeURIComponent(packageID));
+		}
+	</script>
+
 	<!-- This form will submit to itself -->
 	<form action="" method="POST">
 		<!-- The renderer does all of the work of getting the fields and adding them to the html -->
@@ -16,10 +72,40 @@
 		{% else %}
 			{% for package in packageList %}
 				<li class="list-group-item">
-					<p class="d-inline-block">{{ package["trackingNumber"] }}</p>
+					<!-- Render the package title -->
+					<p class="d-inline-block" id="packageLabel-{{package['id']}}">{{ package["title"] }}</p>
+					<!-- Button with link to package details page for this package -->
 					<a role="button" class="btn btn-outline-primary" href="/packageDetails/{{package['id']}}">View details</a>
+					<!-- Button that opens the title input modal -->
+					<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#titleInputModal" onclick="assignPackageIDToModal(`{{package['id']}}`)">Change title</button>
 				</li>
 			{% endfor %}
 		{% endif %}
 	</ul>
+
+	<!-- This is the modal dialog allowing the user to input text for their package title -->
+	<div class="modal fade" id="titleInputModal" tabindex="-1" aria-labelledby="titleInputModal" aria-hidden="true">
+		<div class="modal-dialog">
+		  	<div class="modal-content">
+				<!-- The header of the dialog - title bar and stuff -->
+				<div class="modal-header">
+			  		<h5 class="modal-title">Enter New Title:</h5>
+					<!-- Second close button - X in top corner -->
+			  		<button type="button" class="btn-close" id="xButton" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<input type="text" class="form-control" id="new-title-input">
+					<!-- If there is an error then this error message will be unhidden by jqery -->
+					<p class="text-danger d-none" id="titleUpdateErrorMessage">Couldn't update title. Please try again.</p>
+					<!-- This will hold the package ID of the package that this modal is for -->
+					<input type="hidden" class="packageIDHolder">
+				</div>
+				<!-- The submit and cancel button -->
+				<div class="modal-footer" id="updateTitleModalFooter">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="cancelButton">Cancel</button>
+					<button type="button" class="btn btn-primary" onclick="updateTitle()" id="updateButton">Update title</button>
+				</div>
+			</div>
+		</div>
+	</div>
 {% endblock %}

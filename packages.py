@@ -124,7 +124,8 @@ class PackageHandler():
 		cur = self.con.cursor()
 		cur.row_factory = sqlite3.Row # Dictionary format
 		
-		cur.execute("SELECT * FROM packages WHERE user_id = ?", [userID])
+		# The result set needs to have the title, but if the title is null we use the tracking number
+		cur.execute("SELECT id, COALESCE(title, trackingNumber) AS title FROM packages WHERE user_id = ?", [userID])
 		result = cur.fetchall()
 		cur.close()
 		return result
@@ -145,3 +146,26 @@ class PackageHandler():
 		result = cur.fetchall()
 		cur.close()
 		return result
+
+	# This function will update the specified package's title after verifying that the user has access to it
+	@createDBConnection
+	def updatePackageTitle(self, packageID, userID, title):
+		# Get the package that matches the passed id and make sure it has the passed user ID
+		cur = self.con.cursor()
+		cur.execute("SELECT id FROM packages WHERE id = ? AND user_id = ?", [packageID, userID])
+		result = cur.fetchone()
+
+		# If there is no result then it means there are no packages with that ID or the package
+		# does not belong to the current user. Need to stop them from editing someone else's package.
+		if not result:
+			cur.close()
+			return "0"
+
+		# Assign none to the title if the string is empty - we want to insert NULL into the db not an empty string
+		newTitle = title.strip() if len(title.strip()) > 0 else None
+		cur.execute("UPDATE packages SET title = ?", [newTitle]) #Update and close connection
+		self.con.commit()
+		cur.close()
+
+		# We have succeeded - return the new title
+		return newTitle
