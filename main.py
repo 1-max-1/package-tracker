@@ -197,12 +197,25 @@ def resetPassword(token):
 def updatePackageTitle():
 	# If they dont have a user ID in their session then they are not logged in, which means they are
 	# manipulating the URL. HAXXXXX block them from it.
-	if "userID" not in session:
+	if "userID" not in session or "packageID" not in request.form:
 		return "0"
 
 	# Update the package with the data. We just pass on what the updatePackage function returned.
 	# it will send back "0" if it failed or the new package title on a success.
 	return packageHandler.updatePackageTitle(request.form["packageID"], session["userID"], request.form["newTitle"])
+
+# This endpoint is for handling ajax requests from the UI.
+# the ajax request is initiated when the user wants to delete one of their packages.
+@app.route("/deletePackage", methods=["POST", "GET"])
+def deletePackage():
+	# If they dont have a user ID in their session then they are not logged in, which means they are
+	# manipulating the URL. HAXXXXX block them from it.
+	if "userID" not in session or "packageID" not in request.form:
+		return "0"
+
+	# Request for the package to be deleted. The function will first check if the user is authorised.
+	# Returns either "0" or "1" for success and failiure. We can just pass on this value.
+	return packageHandler.deletePackage(request.form["packageID"], session["userID"])
 
 if __name__ == "__main__":
 	app.run(debug=True, use_reloader=False)

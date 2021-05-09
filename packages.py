@@ -136,7 +136,7 @@ class PackageHandler():
 		cur.row_factory = sqlite3.Row
 
 		# Check that the package is associated with this user. If not, return false.
-		cur.execute("SELECT packages.id FROM packages INNER JOIN users ON users.id = packages.user_id WHERE users.id = ? AND packages.id = ?", [userID, packageID])
+		cur.execute("SELECT id FROM packages WHERE user_id = ? AND id = ?", [userID, packageID])
 		if not cur.fetchone():
 			return False
 
@@ -169,3 +169,23 @@ class PackageHandler():
 
 		# We have succeeded - return the new title
 		return newTitle
+
+	@createDBConnection
+	def deletePackage(self, packageID, userID):
+		# Get the package that matches the passed id and make sure it has the passed user ID
+		cur = self.con.cursor()
+		cur.execute("SELECT id FROM packages WHERE id = ? AND user_id = ?", [packageID, userID])
+		result = cur.fetchone()
+
+		# If there is no result then it means there are no packages with that ID or the package
+		# does not belong to the current user. Need to stop them from deleting someone else's package.
+		if not result:
+			cur.close()
+			return "0"
+
+		# If they are authorised to delete this package then delete it, and return the title of it.
+		# The title is needed for
+		cur.execute("DELETE FROM packages WHERE id = ?", [packageID])
+		self.con.commit()
+		cur.close()
+		return "1"
