@@ -25,37 +25,39 @@ class PackageHandler():
 	# The constructor creates the schedulers
 	def __init__(self, dbPath, chromeDriverName):
 		self.scheduler = BackgroundScheduler()
-		# self.scheduler.add_job(self.addOldPackagesToQueue, "interval", seconds=45)
-		# self.scheduler.add_job(self.scrapeNextInQueue, "interval", seconds=20)
-		# self.scheduler.start()
+		self.scheduler.add_job(self.addOldPackagesToQueue, "interval", seconds=45)
+		self.scheduler.add_job(self.scrapeNextInQueue, "interval", seconds=30)
+		self.scheduler.start()
 
 		self.dbPath = dbPath
 		self.con = None
 
-		# # Dont wait for full page load
-		# caps = DesiredCapabilities().CHROME
-		# caps["pageLoadStrategy"] = "none"
-		# # This option needs to be set otherwise the automated browser will be detected by the website
-		# opts = Options()
-		# opts.add_argument("--disable-blink-features=AutomationControlled")
-		# # Startup the browser
-		# self.browser = Chrome(chromeDriverName, desired_capabilities=caps, chrome_options=opts)
-		# self.browser.get("https://google.com")
-		self.browser = None
+		# Dont wait for full page load
+		caps = DesiredCapabilities().CHROME
+		caps["pageLoadStrategy"] = "none"
+		# This option needs to be set otherwise the automated browser will be detected by the website
+		opts = Options()
+		opts.add_argument("--disable-blink-features=AutomationControlled")
+		# Startup the browser
+		self.browser = Chrome(chromeDriverName, desired_capabilities=caps, chrome_options=opts)
+		self.browser.get("https://google.com")
+		#self.browser = None
 
 	# Acts like a destructor
 	def __del__(self):
-		# self.scheduler.shutdown()
-		# self.browser.close()
-		pass
+		self.scheduler.shutdown()
+		self.browser.close()
+		#pass
 
 	# Gets the top package on the queue - next in line. Proceeds to scrape the data for that package and add it to the db. Package is then removed from the queue and updated
-	@createDBConnection
+	# Cant use the decorator here becase the sqlite connection will be on another thread
 	def scrapeNextInQueue(self):
 		# Get the package that is next in line for being scraped
-		cur = self.con.cursor()
+		# Order by priority so we get new packages first
+		con = sqlite3.connect(self.dbPath)
+		cur = con.cursor()
 		cur.row_factory = sqlite3.Row # Dictionary format
-		cur.execute("SELECT queue.package_id AS id, packages.trackingNumber AS trackingNumber FROM queue INNER JOIN packages ON queue.package_id = packages.id LIMIT 1")
+		cur.execute("SELECT queue.package_id AS id, packages.trackingNumber AS trackingNumber FROM queue INNER JOIN packages ON queue.package_id = packages.id ORDER BY queue.priority DESC, packages.id LIMIT 1")
 		package = cur.fetchone()
 
 		if not package:
@@ -82,14 +84,15 @@ class PackageHandler():
 		cur.execute("DELETE FROM queue WHERE package_id = ?", [package["id"]])
 		cur.execute("UPDATE packages SET last_updated = ? WHERE id = ?", [time(), package["id"]])
 		cur.close()
-		self.con.commit()
+		con.commit()
 
 	# Checks if any packages haven't been updated for more than 6 hou`rs. If so, adds them to the queue
-	@createDBConnection
+	# Cant use the decorator here because the sqlite connection will be on a nother thread
 	def addOldPackagesToQueue(self):		
 		# Create a cursor with results in dictionary format, and get all packages that haven't been
 		# updated for 6 hours, and are not already in the queue.
-		cur = self.con.cursor()
+		con = sqlite3.connect(self.dbPath)
+		cur = con.cursor()
 		cur.row_factory = sqlite3.Row # Dictionary format
 		cur.execute("SELECT id FROM packages WHERE (? - last_updated) >= 21600 AND id NOT IN (SELECT package_id FROM queue)", [time()])
 		result = cur.fetchall()
@@ -97,7 +100,7 @@ class PackageHandler():
 		# Loop through each result and add the ID to the queue
 		for row in result:
 			cur.execute("INSERT INTO queue (package_id) VALUES (?)", [row["id"]])
-			self.con.commit()
+			con.commit()
 		cur.close()
 
 	@createDBConnection
@@ -114,6 +117,8 @@ class PackageHandler():
 		# If they aren't tracking the package, then we insert it into the db
 		cur = self.con.cursor() # New cursor to avoid conflicts with different operation types
 		cur.execute("INSERT INTO packages (trackingNumber, user_id) VALUES (?, ?)", [trackingNumber, userID])
+		self.con.commit()
+		cur.execute("INSERT INTO queue (package_id, priority) VALUES ((SELECT MAX(id) FROM packages), 1)")
 		self.con.commit()
 		cur.close()
 		return True

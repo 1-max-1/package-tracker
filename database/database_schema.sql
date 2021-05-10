@@ -14,7 +14,8 @@ CREATE TABLE 'packages' (
 
 CREATE TABLE 'queue' (
 'id' INTEGER NOT NULL  PRIMARY KEY AUTOINCREMENT,
-'package_id' INTEGER NOT NULL  REFERENCES 'packages' ('id')
+'package_id' INTEGER NOT NULL  REFERENCES 'packages' ('id'),
+'priority' INTEGER(1) NOT NULL  DEFAULT 0
 );
 
 CREATE TABLE 'package_data' (
