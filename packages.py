@@ -24,30 +24,30 @@ def createDBConnection(func):
 class PackageHandler():
 	# The constructor creates the schedulers
 	def __init__(self, dbPath, chromeDriverName):
-		self.scheduler = BackgroundScheduler()
-		self.scheduler.add_job(self.addOldPackagesToQueue, "interval", seconds=45)
-		self.scheduler.add_job(self.scrapeNextInQueue, "interval", seconds=30)
-		self.scheduler.start()
+		# self.scheduler = BackgroundScheduler()
+		# self.scheduler.add_job(self.addOldPackagesToQueue, "interval", seconds=15)
+		# self.scheduler.add_job(self.scrapeNextInQueue, "interval", seconds=30)
+		# self.scheduler.start()
 
 		self.dbPath = dbPath
 		self.con = None
 
-		# Dont wait for full page load
-		caps = DesiredCapabilities().CHROME
-		caps["pageLoadStrategy"] = "none"
-		# This option needs to be set otherwise the automated browser will be detected by the website
-		opts = Options()
-		opts.add_argument("--disable-blink-features=AutomationControlled")
-		# Startup the browser
-		self.browser = Chrome(chromeDriverName, desired_capabilities=caps, chrome_options=opts)
-		self.browser.get("https://google.com")
-		#self.browser = None
+		# # Dont wait for full page load
+		# caps = DesiredCapabilities().CHROME
+		# caps["pageLoadStrategy"] = "none"
+		# # This option needs to be set otherwise the automated browser will be detected by the website
+		# opts = Options()
+		# opts.add_argument("--disable-blink-features=AutomationControlled")
+		# # Startup the browser
+		# self.browser = Chrome(chromeDriverName, desired_capabilities=caps, chrome_options=opts)
+		# self.browser.get("https://google.com")
+		self.browser = None
 
 	# Acts like a destructor
 	def __del__(self):
-		self.scheduler.shutdown()
-		self.browser.close()
-		#pass
+		# self.scheduler.shutdown()
+		# self.browser.close()
+		pass
 
 	# Gets the top package on the queue - next in line. Proceeds to scrape the data for that package and add it to the db. Package is then removed from the queue and updated
 	# Cant use the decorator here becase the sqlite connection will be on another thread
