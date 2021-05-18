@@ -11,7 +11,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 # This will be a decorator. It gets applied to class functions and modifies them so that a new database
-# connection is created before the function is called. THe connection is then closed. This saves having
+# connection is created before the function is called. The connection is then closed. This saves having
 # to write a new with-connect-as block every time I just want to get a cursor. Plus, decorators are cool!
 def createDBConnection(func):
 	def wrapper(self, *args, **kwargs):
@@ -23,31 +23,33 @@ def createDBConnection(func):
 
 class PackageHandler():
 	# The constructor creates the schedulers
-	def __init__(self, dbPath, chromeDriverName):
-		# self.scheduler = BackgroundScheduler()
-		# self.scheduler.add_job(self.addOldPackagesToQueue, "interval", seconds=15)
-		# self.scheduler.add_job(self.scrapeNextInQueue, "interval", seconds=30)
-		# self.scheduler.start()
-
+	def __init__(self, dbPath, chromeDriverName, emailHandler):
+		self.emailHandler = emailHandler
 		self.dbPath = dbPath
 		self.con = None
 
-		# # Dont wait for full page load
-		# caps = DesiredCapabilities().CHROME
-		# caps["pageLoadStrategy"] = "none"
-		# # This option needs to be set otherwise the automated browser will be detected by the website
-		# opts = Options()
-		# opts.add_argument("--disable-blink-features=AutomationControlled")
-		# # Startup the browser
-		# self.browser = Chrome(chromeDriverName, desired_capabilities=caps, chrome_options=opts)
-		# self.browser.get("https://google.com")
-		self.browser = None
+		self.scheduler = BackgroundScheduler()
+		#self.scheduler.add_job(self.addOldPackagesToQueue, "interval", seconds=15)
+		#self.scheduler.add_job(self.scrapeNextInQueue, "interval", seconds=40)
+		self.scheduler.add_job(self.checkForDeadPackages, "interval", seconds=20) # CHANGE TO 300
+		self.scheduler.start()
+
+		# Dont wait for full page load
+		caps = DesiredCapabilities().CHROME
+		caps["pageLoadStrategy"] = "none"
+		# This option needs to be set otherwise the automated browser will be detected by the website
+		opts = Options()
+		opts.add_argument("--disable-blink-features=AutomationControlled")
+		# Startup the browser
+		#self.browser = Chrome(chromeDriverName, desired_capabilities=caps, chrome_options=opts)
+		#self.browser.get("https://google.com")
+		#self.browser = None
 
 	# Acts like a destructor
 	def __del__(self):
-		# self.scheduler.shutdown()
-		# self.browser.close()
-		pass
+		self.scheduler.shutdown()
+		#self.browser.close()
+		#pass
 
 	# Gets the top package on the queue - next in line. Proceeds to scrape the data for that package and add it to the db. Package is then removed from the queue and updated
 	# Cant use the decorator here becase the sqlite connection will be on another thread
@@ -67,9 +69,14 @@ class PackageHandler():
 		self.browser.get("https://parcelsapp.com/en/tracking/" + package["trackingNumber"])
 		# Wait until the data has been fetched - a <ul> element will appear on the page
 		unorderedList = WebDriverWait(self.browser, 30000).until(EC.presence_of_element_located(("css selector", ".list-unstyled.events")))
+		unorderedListItems = unorderedList.find_elements_by_tag_name("li")
+
+		# Get the number of package rout data points for this package
+		cur.execute("SELECT COUNT(*) AS count FROM package_data WHERE package_id = ?", [package["id"]])
+		packageDataCount = cur.fetchone()["count"]
 		cur.execute("DELETE FROM package_data WHERE package_id = ?", [package["id"]]) # Remove all old data
 
-		for listItem in unorderedList.find_elements_by_tag_name("li"):
+		for listItem in unorderedListItems:
 			# This div holds 2 child elements containing the date and time of the package stage
 			dateTimeDiv = listItem.find_element_by_css_selector("div.event-time")
 			# We join the date and time together in 1 string, then pass it to this time parsing function
@@ -81,12 +88,14 @@ class PackageHandler():
 			cur.execute("INSERT INTO package_data (package_id, date, time, data) VALUES (?, ?, ?, ?)", [package["id"], strftime("%a %d %b %Y", parsedTime), strftime("%I:%M %p", parsedTime), data])
 
 		# This package doesn't need to be updated for another 6 hours
+		# Also set the last_new_data field to the current time if the amount of new data is bigger than the amount of old data
 		cur.execute("DELETE FROM queue WHERE package_id = ?", [package["id"]])
-		cur.execute("UPDATE packages SET last_updated = ? WHERE id = ?", [time(), package["id"]])
+		cur.execute("UPDATE packages SET last_updated = ?, last_new_data = CASE WHEN ? > 0 THEN ? ELSE (SELECT last_new_data FROM packages WHERE id = ?) END WHERE id = ?", [time(), len(unorderedListItems) - packageDataCount, time(), package["id"], package["id"]])
 		cur.close()
 		con.commit()
+		con.close()
 
-	# Checks if any packages haven't been updated for more than 6 hou`rs. If so, adds them to the queue
+	# Checks if any packages haven't been updated for more than 6 hours. If so, adds them to the queue
 	# Cant use the decorator here because the sqlite connection will be on a nother thread
 	def addOldPackagesToQueue(self):		
 		# Create a cursor with results in dictionary format, and get all packages that haven't been
@@ -102,6 +111,35 @@ class PackageHandler():
 			cur.execute("INSERT INTO queue (package_id) VALUES (?)", [row["id"]])
 			con.commit()
 		cur.close()
+		con.close()
+
+	# Will find any packages that have not had new data for a long time.
+	# Some are deleted, and some prompt a reminder email to the user that owns them.
+	def checkForDeadPackages(self):
+		con = sqlite3.connect(self.dbPath)
+		cur = con.cursor()
+		cur.row_factory = sqlite3.Row # Dictionary format
+
+		# This joins users to pacakges, returns the email, title and id for each package that has not had new data for around a month
+		cur.execute("SELECT COALESCE(packages.title, packages.trackingNumber) AS title, packages.last_new_data AS last_new_data, packages.id AS id, users.email AS user_email FROM packages INNER JOIN users ON users.id = packages.user_id WHERE (? - packages.last_new_data) >= 2419200 AND packages.email_sent = 0", [time()])
+		result = cur.fetchall()
+
+		# Loop through results - we need to either send a reminder email or delete the package
+		for row in result:
+			print("Found dead package")
+			# If the difference is greater than a month then this package should be deleted
+			if time() - row["last_new_data"] > 2678400:
+				print("Deleting package")
+				cur.execute("DELETE FROM packages WHERE id = ?", [row["id"]])
+			# Otherwise it is getting close to deletion, so we send an email
+			else:
+				print("Sending email")
+				self.emailHandler.sendPackageReminderEmail(row["user_email"], row["title"], row["id"])
+				cur.execute("UPDATE packages SET email_sent = 1 WHERE id = ?", [row["id"]])
+			con.commit()
+
+		cur.close()
+		con.close()
 
 	@createDBConnection
 	def createNewPackage(self, trackingNumber, userID):
@@ -130,7 +168,7 @@ class PackageHandler():
 		cur.row_factory = sqlite3.Row # Dictionary format
 		
 		# The result set needs to have the title, but if the title is null we use the tracking number
-		cur.execute("SELECT id, COALESCE(title, trackingNumber) AS title FROM packages WHERE user_id = ?", [userID])
+		cur.execute("SELECT id, COALESCE(title, trackingNumber) AS title, last_new_data, ? AS current_time FROM packages WHERE user_id = ?", [time(), userID])
 		result = cur.fetchall()
 		cur.close()
 		return result

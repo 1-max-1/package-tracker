@@ -9,7 +9,9 @@ CREATE TABLE 'packages' (
 'title' TEXT(50) DEFAULT NULL,
 'trackingNumber' TEXT NOT NULL ,
 'user_id' INTEGER NOT NULL  REFERENCES 'users' ('id'),
-'last_updated' INTEGER(15) NOT NULL  DEFAULT 0
+'last_updated' INTEGER(15) NOT NULL  DEFAULT 0,
+'last_new_data' INTEGER(15) NOT NULL ,
+'email_sent' INTEGER(1) NOT NULL  DEFAULT 0
 );
 
 CREATE TABLE 'queue' (

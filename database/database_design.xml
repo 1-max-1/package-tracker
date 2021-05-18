@@ -41,6 +41,12 @@
 <row name="last_updated" null="0" autoincrement="0">
 <datatype>INTEGER(15)</datatype>
 <default>0</default></row>
+<row name="last_new_data" null="0" autoincrement="0">
+<datatype>INTEGER(15)</datatype>
+</row>
+<row name="email_sent" null="0" autoincrement="0">
+<datatype>INTEGER(1)</datatype>
+<default>0</default></row>
 <key type="PRIMARY" name="">
 <part>id</part>
 </key>

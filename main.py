@@ -14,7 +14,7 @@ app.secret_key = environ["FLASK_KEY"]
 
 emailHandler = EmailHandler()
 authenticator = Authenticator("database/database.db", emailHandler)
-packageHandler = PackageHandler("database/database.db", environ["CHROMEDRIVER_NAME"])
+packageHandler = PackageHandler("database/database.db", environ["CHROMEDRIVER_NAME"], emailHandler)
 
 @app.route('/')
 def hello_world():
@@ -206,7 +206,7 @@ def updatePackageTitle():
 
 # This endpoint is for handling ajax requests from the UI.
 # the ajax request is initiated when the user wants to delete one of their packages.
-@app.route("/deletePackage", methods=["POST", "GET"])
+@app.route("/deletePackage", methods=["POST"])
 def deletePackage():
 	# If they dont have a user ID in their session then they are not logged in, which means they are
 	# manipulating the URL. HAXXXXX block them from it.
