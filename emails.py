@@ -8,8 +8,11 @@ from email.mime.multipart import MIMEMultipart
 class EmailHandler:
 	# When the class is initiated it will create a connection to google's smtp server
 	def __init__(self):
+		# Constants - makes it easier to modify them if they are up here
 		self.emailAddress = "flask19181@gmail.com"
+		self.targetURL = "http://127.0.0.1:5000/"
 
+		# Connect to email server
 		self.sslContext = create_default_context()
 		self.emailServer = smtplib.SMTP_SSL("smtp.gmail.com", 465, context=self.sslContext)
 		self.emailServer.login(self.emailAddress, environ["EMAIL_PASSWORD"])
@@ -24,7 +27,7 @@ class EmailHandler:
 <body>
 <p>
 Thanks for signing up! There's just one more step - click the link below to verify your account.
-<br/><br/><a href="http://127.0.0.1:5000/confirmUserEmail/{token}">http://127.0.0.1:5000/confirmUserEmail/{token}</a><br/><br/>
+<br/><br/><a href="{self.targetURL}confirmUserEmail/{token}">{self.targetURL}confirmUserEmail/{token}</a><br/><br/>
 If it doesn't work try copying the address and entering it in a browsers search bar.
 This link will expire in 30 minutes.
 </p>
@@ -37,7 +40,7 @@ This link will expire in 30 minutes.
 <body>
 <p>
 There was a request to reset your password. Click the link below to change it.
-<br/><br/><a href="http://127.0.0.1:5000/resetPassword/{token}">http://127.0.0.1:5000/resetPassword/{token}</a><br/><br/>
+<br/><br/><a href="{self.targetURL}resetPassword/{token}">{self.targetURL}resetPassword/{token}</a><br/><br/>
 If it doesn't work try copying the address and entering it in a browsers search bar.
 This link will expire in 30 minutes.
 
@@ -54,7 +57,7 @@ If this wasn't you, don't worry. Your account and password is safe. You can safe
 Your package <i>{packageTitle}</i> has not had any new data for almost a month.
 Because of this, it will soon be deleted.
 If you wish to keep your package, please click the link below.
-<br/><a href="http://127.0.0.1:500/renewPackage/{packageID}">http://127.0.0.1:500/renewPackage/{packageID}</a><br/>
+<br/><a href="{self.targetURL}renewPackage/{packageID}">{self.targetURL}renewPackage/{packageID}</a><br/>
 If it doesn't work try copying the address and entering it in a browsers search bar.
 </p>
 </body>

@@ -31,7 +31,7 @@ class PackageHandler():
 		self.scheduler = BackgroundScheduler()
 		#self.scheduler.add_job(self.addOldPackagesToQueue, "interval", seconds=15)
 		#self.scheduler.add_job(self.scrapeNextInQueue, "interval", seconds=40)
-		self.scheduler.add_job(self.checkForDeadPackages, "interval", seconds=20) # CHANGE TO 300
+		#self.scheduler.add_job(self.checkForDeadPackages, "interval", seconds=300)
 		self.scheduler.start()
 
 		# Dont wait for full page load
@@ -126,14 +126,11 @@ class PackageHandler():
 
 		# Loop through results - we need to either send a reminder email or delete the package
 		for row in result:
-			print("Found dead package")
 			# If the difference is greater than a month then this package should be deleted
 			if time() - row["last_new_data"] > 2678400:
-				print("Deleting package")
 				cur.execute("DELETE FROM packages WHERE id = ?", [row["id"]])
 			# Otherwise it is getting close to deletion, so we send an email
 			else:
-				print("Sending email")
 				self.emailHandler.sendPackageReminderEmail(row["user_email"], row["title"], row["id"])
 				cur.execute("UPDATE packages SET email_sent = 1 WHERE id = ?", [row["id"]])
 			con.commit()
@@ -175,13 +172,12 @@ class PackageHandler():
 
 	@createDBConnection
 	def getPackageData(self, packageID, userID):
+		# Make sure user has access
+		if self.isPackageAssociatedWithUser(packageID, userID) == False:
+			return False
+
 		cur = self.con.cursor() # Dictionary format cursor
 		cur.row_factory = sqlite3.Row
-
-		# Check that the package is associated with this user. If not, return false.
-		cur.execute("SELECT id FROM packages WHERE user_id = ? AND id = ?", [userID, packageID])
-		if not cur.fetchone():
-			return False
 
 		# Return all stages in the packages journey with date, time and the description of the event
 		# The package title is added to the top of the result. Order by reverse order so data is in date order
@@ -189,23 +185,29 @@ class PackageHandler():
 		result = cur.fetchall()
 		cur.close()
 		return result
+	
+	# This checks if the specified user id has access to the specified package
+	def isPackageAssociatedWithUser(self, packageID, userID):
+		cur = self.con.cursor()
+		# Check that the package is associated with this user. If not, return false.
+		cur.execute("SELECT id FROM packages WHERE user_id = ? AND id = ?", [userID, packageID])
+		result = cur.fetchone()
+		cur.close()
+
+		if not result:
+			return False
+		return True
 
 	# This function will update the specified package's title after verifying that the user has access to it
 	@createDBConnection
 	def updatePackageTitle(self, packageID, userID, title):
-		# Get the package that matches the passed id and make sure it has the passed user ID
-		cur = self.con.cursor()
-		cur.execute("SELECT id FROM packages WHERE id = ? AND user_id = ?", [packageID, userID])
-		result = cur.fetchone()
-
-		# If there is no result then it means there are no packages with that ID or the package
-		# does not belong to the current user. Need to stop them from editing someone else's package.
-		if not result:
-			cur.close()
+		# Make sure they own this package
+		if self.isPackageAssociatedWithUser(packageID, userID) == False:
 			return "0"
 
 		# Assign none to the title if the string is empty - we want to insert NULL into the db not an empty string
 		newTitle = title.strip() if len(title.strip()) > 0 else None
+		cur = self.con.cursor()
 		cur.execute("UPDATE packages SET title = ?", [newTitle]) #Update and close connection
 		self.con.commit()
 		cur.close()
@@ -215,20 +217,26 @@ class PackageHandler():
 
 	@createDBConnection
 	def deletePackage(self, packageID, userID):
-		# Get the package that matches the passed id and make sure it has the passed user ID
-		cur = self.con.cursor()
-		cur.execute("SELECT id FROM packages WHERE id = ? AND user_id = ?", [packageID, userID])
-		result = cur.fetchone()
-
-		# If there is no result then it means there are no packages with that ID or the package
-		# does not belong to the current user. Need to stop them from deleting someone else's package.
-		if not result:
-			cur.close()
+		# Make sure they own this package
+		if self.isPackageAssociatedWithUser(packageID, userID) == False:
 			return "0"
 
-		# If they are authorised to delete this package then delete it, and return the title of it.
-		# The title is needed for
+		# If they are authorised to delete this package then delete it.
+		cur = self.con.cursor()
 		cur.execute("DELETE FROM packages WHERE id = ?", [packageID])
 		self.con.commit()
 		cur.close()
 		return "1"
+
+	@createDBConnection
+	def renewPackage(self, packageID, userID):
+		if self.isPackageAssociatedWithUser(packageID, userID) == False:
+			return False
+
+		# If they have access to it, reset the last_new_data to the current time, and reset the email_sent flag
+		# This will make the system wait another few weeks before warning the user, and will allow it to resend the email.
+		cur = self.con.cursor()
+		cur.execute("UPDATE packages SET last_new_data = ?, email_sent = 0 WHERE id = ?", [time(), packageID])
+		self.con.commit()
+		cur.close()
+		return True

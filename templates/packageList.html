@@ -103,7 +103,7 @@
 
 					<!-- If the package hasn't been updated for 3 weeks, then we show a little alert -->
 					{% if package["current_time"] - package["last_new_data"] > 2160000 %}
-						<p class="text-warning d-inline-block"><span class="border border-warning">This package is old and hasn't been updated for a while. Consider deleting it?</span></p>
+						<p class="text-warning d-inline-block"><span class="border border-warning">This package is old and hasn't been updated for a while. Consider deleting it? Or, <a href="/renewPackage/{{package['id']}}">renew</a> it.</span></p>
 					{% endif %}
 				</li>
 			{% endfor %}
