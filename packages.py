@@ -223,6 +223,8 @@ class PackageHandler():
 		
 		# If they are authorised to delete this package then delete it.
 		cur = self.con.cursor()
+		cur.execute("DELETE FROM queue WHERE package_id = ?", [packageID])
+		cur.execute("DELETE FROM package_data WHERE package_id = ?", [packageID])
 		cur.execute("DELETE FROM packages WHERE id = ?", [packageID])
 		self.con.commit()
 		cur.close()
