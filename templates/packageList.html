@@ -5,25 +5,27 @@
 		// When a modal's submit button is clicked, we need some way of getting the package ID that
 		// the modal is for. This function is called just before the modal is opened. It will put the
 		// package ID into a hidden input on the modal so it can be retrieved later.
-		function assignPackageIDToModal(packageID) {
-			$(".packageIDHolder").val(parseInt(packageID));
+		function assignPackageIDToModal(packageID, modalName) {
+			$("#" + modalName + "-packageIDHolder").val(parseInt(packageID));
 		}
 
 		// Called when the user clicks the dialog button to rename or delete their package.
 		// modalName should be the css ID of the modal that called this function.
+		// Since the modal HTML elements have ids that are prefixed by the modal name, we just put
+		// the modal name in front of an id to get the element of the active modal
 		function handleModalSubmit(modalName) {
 			// Disable the 3 buttons
-			$(".xButton").prop("disabled", true);
-			$(".cancelButton").prop("disabled", true);
-			$(".updateButton").prop("disabled", true);
+			$("#" + modalName + "-xButton").prop("disabled", true);
+			$("#" + modalName + "-cancelButton").prop("disabled", true);
+			$("#" + modalName + "-updateButton").prop("disabled", true);
 
 			// Add HTML - this is a little bootstrap spinner loading thing
-			$(".modal-footer").append('<div class="spinner-border text-primary maxsSpinner" role="status"><span class="visually-hidden">Loading...</span></div>');
+			$("#" + modalName + "-modal-footer").append('<div class="spinner-border text-primary" id="' + modalName + '-loadingSpinner" role="status"><span class="visually-hidden">Loading...</span></div>');
 			// Make the error message hidden - new request, no error
-			$(".modalErrorMessage").removeClass("d-inline");
-			$(".modalErrorMessage").addClass("d-none");
+			$("#" + modalName + "-modalErrorMessage").removeClass("d-inline");
+			$("#" + modalName + "-modalErrorMessage").addClass("d-none");
 
-			var packageID = $(".packageIDHolder").val();
+			var packageID = $("#" + modalName + "-packageIDHolder").val();
 
 			// This request will send the request to the flask endpoint
 			var xhttp = new XMLHttpRequest();
@@ -31,10 +33,10 @@
 				// State = 4 means request has completed
     			if (xhttp.readyState == 4) {
 					// Remove loading indicator and re-enable all of the buttons
-      				$(".maxsSpinner").remove();
-					$(".xButton").prop("disabled", false);
-					$(".cancelButton").prop("disabled", false);
-					$(".updateButton").prop("disabled", false);
+      				$("#" + modalName + "-loadingSpinner").remove();
+					$("#" + modalName + "-xButton").prop("disabled", false);
+					$("#" + modalName + "-cancelButton").prop("disabled", false);
+					$("#" + modalName + "-updateButton").prop("disabled", false);
 
 					// If the request was a success then we can hide the modal
 					if(xhttp.status == 200 && xhttp.responseText != "0") {
@@ -43,12 +45,15 @@
 							$("#packageLabel-" + packageID).text(xhttp.responseText);
 						else if(modalName == "deleteModal")
 							removePackageFromList(packageID);
+							
+						// Hide modal and reset text input field
 						bootstrap.Modal.getInstance(document.getElementById(modalName)).hide();
+						$("#new-title-input").val("");
 					}
 					// If it failed then we show the error messge
 					else {
-						$(".modalErrorMessage").removeClass("d-none");
-						$(".modalErrorMessage").addClass("d-inline");
+						$("#" + modalName + "-modalErrorMessage").removeClass("d-none");
+						$("#" + modalName + "-modalErrorMessage").addClass("d-inline");
 					}
     			}
   			};
@@ -97,9 +102,9 @@
 					<!-- Button with link to package details page for this package -->
 					<a role="button" class="btn btn-outline-primary" href="/packageDetails/{{package['id']}}">View details</a>
 					<!-- Button that opens the title input modal -->
-					<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#titleInputModal" onclick="assignPackageIDToModal(`{{package['id']}}`)">Change title</button>
+					<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#titleInputModal" onclick="assignPackageIDToModal(`{{package['id']}}`, `titleInputModal`)">Change title</button>
 					<!-- Opens deletion modal -->
-					<button type="button" class="btn btn-outline-danger d-inline-block" data-bs-toggle="modal" data-bs-target="#deleteModal" onclick="assignPackageIDToModal(`{{package['id']}}`)">Delete</button>
+					<button type="button" class="btn btn-outline-danger d-inline-block" data-bs-toggle="modal" data-bs-target="#deleteModal" onclick="assignPackageIDToModal(`{{package['id']}}`, `deleteModal`)">Delete</button>
 
 					<!-- If the package hasn't been updated for 3 weeks, then we show a little alert -->
 					{% if package["current_time"] - package["last_new_data"] > 2160000 %}
@@ -118,19 +123,19 @@
 				<div class="modal-header">
 			  		<h5 class="modal-title">Enter New Title:</h5>
 					<!-- Second close button - X in top corner -->
-			  		<button type="button" class="btn-close xButton" data-bs-dismiss="modal" aria-label="Close"></button>
+			  		<button type="button" class="btn-close" id="titleInputModal-xButton" data-bs-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<div class="modal-body">
 					<input type="text" class="form-control" id="new-title-input">
 					<!-- If there is an error then this error message will be unhidden by jqery -->
-					<p class="text-danger d-none modalErrorMessage">Couldn't update title. Please try again.</p>
+					<p class="text-danger d-none" id="titleInputModal-modalErrorMessage">Couldn't update title. Please try again.</p>
 					<!-- This will hold the package ID of the package that this modal is for -->
-					<input type="hidden" class="packageIDHolder">
+					<input type="hidden" id="titleInputModal-packageIDHolder">
 				</div>
 				<!-- The submit and cancel button -->
-				<div class="modal-footer">
-					<button type="button" class="btn btn-secondary cancelButton" data-bs-dismiss="modal">Cancel</button>
-					<button type="button" class="btn btn-primary updateButton" onclick="handleModalSubmit('titleInputModal')">Update title</button>
+				<div class="modal-footer" id="titleInputModal-modal-footer">
+					<button type="button" class="btn btn-secondary" id="titleInputModal-cancelButton" data-bs-dismiss="modal">Cancel</button>
+					<button type="button" class="btn btn-primary" id="titleInputModal-updateButton" onclick="handleModalSubmit('titleInputModal')">Update title</button>
 				</div>
 			</div>
 		</div>
@@ -144,19 +149,19 @@
 				<div class="modal-header">
 			  		<h5 class="modal-title">Are you sure?</h5>
 					<!-- Second close button - X in top corner -->
-			  		<button type="button" class="btn-close xButton" data-bs-dismiss="modal" aria-label="Close"></button>
+			  		<button type="button" class="btn-close" id="deleteModal-xButton" data-bs-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<div class="modal-body">
 					<p>This cannot be undone.</p>
 					<!-- If there is an error then this error message will be unhidden by jqery -->
-					<p class="text-danger d-none modalErrorMessage">Couldn't delete package. Please try again.</p>
+					<p class="text-danger d-none" id="deleteModal-modalErrorMessage">Couldn't delete package. Please try again.</p>
 					<!-- This will hold the package ID of the package that this modal is for -->
-					<input type="hidden" class="packageIDHolder">
+					<input type="hidden" id="deleteModal-packageIDHolder">
 				</div>
 				<!-- The submit and cancel button -->
-				<div class="modal-footer">
-					<button type="button" class="btn btn-secondary cancelButton" data-bs-dismiss="modal">Cancel</button>
-					<button type="button" class="btn btn-danger updateButton" onclick="handleModalSubmit('deleteModal')">Yes delete.</button>
+				<div class="modal-footer" id="deleteModal-modal-footer">
+					<button type="button" class="btn btn-secondary" id="deleteModal-cancelButton" data-bs-dismiss="modal">Cancel</button>
+					<button type="button" class="btn btn-danger" id="deleteModal-updateButton" onclick="handleModalSubmit('deleteModal')">Yes delete.</button>
 				</div>
 			</div>
 		</div>

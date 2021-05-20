@@ -151,7 +151,7 @@ class PackageHandler():
 
 		# If they aren't tracking the package, then we insert it into the db
 		cur = self.con.cursor() # New cursor to avoid conflicts with different operation types
-		cur.execute("INSERT INTO packages (trackingNumber, user_id) VALUES (?, ?)", [trackingNumber, userID])
+		cur.execute("INSERT INTO packages (trackingNumber, user_id, last_new_data) VALUES (?, ?, ?)", [trackingNumber, userID, time()])
 		self.con.commit()
 		cur.execute("INSERT INTO queue (package_id, priority) VALUES ((SELECT MAX(id) FROM packages), 1)")
 		self.con.commit()
@@ -220,7 +220,7 @@ class PackageHandler():
 		# Make sure they own this package
 		if self.isPackageAssociatedWithUser(packageID, userID) == False:
 			return "0"
-
+		
 		# If they are authorised to delete this package then delete it.
 		cur = self.con.cursor()
 		cur.execute("DELETE FROM packages WHERE id = ?", [packageID])
