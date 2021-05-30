@@ -242,4 +242,5 @@ def renewPackage(packageID):
 	return redirect(url_for("packageList"))
 
 if __name__ == "__main__":
-	app.run(debug=True, use_reloader=False)
+	#TODO: Make sure to change this to non-debg on production
+	app.run(debug=True, use_reloader=False, host="0.0.0.0", port=5000)

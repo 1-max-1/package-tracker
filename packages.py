@@ -80,8 +80,16 @@ class PackageHandler():
 		for listItem in unorderedListItems:
 			# This div holds 2 child elements containing the date and time of the package stage
 			dateTimeDiv = listItem.find_element_by_css_selector("div.event-time")
+
 			# We join the date and time together in 1 string, then pass it to this time parsing function
-			parsedTime = strptime(dateTimeDiv.find_element_by_tag_name("strong").text + " " + dateTimeDiv.find_element_by_tag_name("span").text, "%d %b %Y %H:%M")
+			# If the package number is incorrect or something, then the scraping will return something
+			# along the lines of "no package data for <<country>>". If this happens it doesn't return a time,
+			# only a date. If there is only a date then this block will catch it.
+			try:
+				parsedTime = strptime(dateTimeDiv.find_element_by_tag_name("strong").text + " " + dateTimeDiv.find_element_by_tag_name("span").text, "%d %b %Y %H:%M")
+			except ValueError:
+				parsedTime = strptime(dateTimeDiv.find_element_by_tag_name("strong").text, "%d %b %Y")
+
 			# The data is what the package stage is actually about, things like Delivered, In Transit To Local Depot, Arrive at destination country etc.
 			data = listItem.find_element_by_css_selector("div.event-content").find_element_by_tag_name("strong").text
 
