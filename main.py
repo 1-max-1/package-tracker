@@ -1,5 +1,6 @@
 from os import environ
 from functools import wraps
+from socket import gethostname, gethostbyname
 
 from flask import Flask, render_template, session, flash, redirect, url_for, request
 import forms
@@ -9,12 +10,12 @@ from packages import PackageHandler
 from emails import EmailHandler
 
 app = Flask(__name__)
-# A key is needed for some operations. In particular, for wt forms to protect against CSRF
+# A key is needed for some operations. In particular, for WTForms to protect against CSRF
 app.secret_key = environ["FLASK_KEY"]
 
 emailHandler = EmailHandler()
 authenticator = Authenticator("database/database.db", emailHandler)
-packageHandler = PackageHandler("database/database.db", environ["CHROMEDRIVER_NAME"], emailHandler)
+packageHandler = PackageHandler("database/database.db", environ["CHROMEDRIVER_PATH"], emailHandler)
 
 @app.route('/')
 def hello_world():
@@ -243,4 +244,4 @@ def renewPackage(packageID):
 
 if __name__ == "__main__":
 	#TODO: Make sure to change this to non-debg on production
-	app.run(debug=True, use_reloader=False, host="0.0.0.0", port=5000)
+	app.run(debug=True, use_reloader=False, host=gethostbyname(gethostname()), port=5000)

@@ -8,7 +8,7 @@
 	<!-- The data for each package stage is passed in as a list of dicts -->
 	<ul class="list-group">	
 		{% if packageData|length < 2 %}
-			<li class="list-group-item">There is no tracking data for this package yet. Please try again later.</li>
+			<li class="list-group-item">There is no tracking data for this package yet. Please try again in a few minutes.</li>
 		<!-- If there are some things in the list then we loop through them -->
 		{% else %}
 			{% for data in packageData[1:] %}
