@@ -1,14 +1,17 @@
-<!-- Takes in an abject that mustinherit from (extend) FlaskForm -->
+<!-- Takes in an abject that must inherit from/extend FlaskForm -->
 {% macro render_form(form) %}
 	<!-- The form will have a built in csrf protection field - we can just output it to the html -->
 	<div>{{ form.csrf_token }}</div>
 
 	<!-- Loop through all of the remaining fields, skipping the csrf one we already did -->
 	{% for field in form if field.name != 'csrf_token' %}
-		<div class="form-control">
+		<!-- + form.classes[field.name] maybe add this in-->
+		<div class="{{'form-control'}}" style="margin-bottom: 10px;">
 			<!-- Output the field title and the actual field element to the html -->
 			{{ field.label() }}
-			{{ field() }}
+			<br>
+			<!-- We can use **kwargs to unpack the unknown number of arguments for this field. The |safe bit tells jinja that this data is safe to deirectly render without auto-escaping it -->
+			{{ field(**kwargs)|safe }}
 
 			<!-- Loop through any errors and display them in a div that bootstrap will color -->
 			{% for error in field.errors %}

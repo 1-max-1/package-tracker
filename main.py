@@ -18,9 +18,8 @@ authenticator = Authenticator("database/database.db", emailHandler)
 packageHandler = PackageHandler("database/database.db", environ["CHROMEDRIVER_PATH"], emailHandler)
 
 @app.route('/')
-def hello_world():
-	#TODO: change this method to a home page renderer
-	return render_template("main_layout_container.html")
+def homePage():
+	return render_template("homePage.html")
 
 # This function can be applied as a decorator to any other function. Basically, it modifies the passed
 # function by first checking if the user is logged in. If so, it runs the passes function.

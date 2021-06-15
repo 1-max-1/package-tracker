@@ -29,10 +29,10 @@ class PackageHandler():
 		self.con = None
 
 		self.scheduler = BackgroundScheduler()
-		self.scheduler.add_job(self.addOldPackagesToQueue, "interval", seconds=15)
-		self.scheduler.add_job(self.scrapeNextInQueue, "interval", seconds=60)
-		self.scheduler.add_job(self.checkForDeadPackages, "interval", seconds=300)
-		self.scheduler.start()
+		#self.scheduler.add_job(self.addOldPackagesToQueue, "interval", seconds=15)
+		#self.scheduler.add_job(self.scrapeNextInQueue, "interval", seconds=60)
+		#self.scheduler.add_job(self.checkForDeadPackages, "interval", seconds=300)
+		#self.scheduler.start()
 
 		# Dont wait for full page load
 		caps = DesiredCapabilities().CHROME
@@ -42,15 +42,15 @@ class PackageHandler():
 		opts.add_argument("--disable-blink-features=AutomationControlled")
 		opts.add_argument("--headless") # Runs faster - no rendering
 		# Startup the browser
-		self.browser = Chrome(chromeDriverName, desired_capabilities=caps, chrome_options=opts)
-		self.browser.get("https://google.com")
-		#self.browser = None
+		#self.browser = Chrome(chromeDriverName, desired_capabilities=caps, chrome_options=opts)
+		#self.browser.get("https://google.com")
+		self.browser = None
 
 	# Acts like a destructor
 	def __del__(self):
-		self.scheduler.shutdown()
-		self.browser.close()
-		#pass
+		#self.scheduler.shutdown()
+		#self.browser.close()
+		pass
 
 	# Gets the top package on the queue - next in line. Proceeds to scrape the data for that package and add it to the db. Package is then removed from the queue and updated
 	# Cant use the decorator here becase the sqlite connection will be on another thread
