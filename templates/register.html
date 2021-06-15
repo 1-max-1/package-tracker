@@ -1,15 +1,23 @@
 {% from "includes/form_renderer.html" import render_form %}
 {% extends "main_layout_container.html" %}
 {% block body %}
-	<h1>Register</h1>
+	<!-- Contain the form in a neat little bootstrap card yeass -->
+	<div class="card" style="width: 25rem; margin: auto; margin-top: 25px;">
+		<div class="card-body">
+			<p class="card-title fw-bold fs-4">Register</h5>
+			<div class="card-text">
+				<!-- This form will submit to itself -->
+				<form action="" method="POST">
+					<!-- The renderer does all of the work of getting the fields and adding them to the html -->
+					{{render_form(form)}}
+					<div class="d-grid"><input type="submit" class="btn btn-primary" value="Go"/></div>
+				</form>
+			</div>
+		</div>
+  	</div>
 
-	<!-- This form will submit to itself -->
-	<form action="" method="POST">
-		<!-- The renderer does all of the work of getting the fields and adding them to the html -->
-		{{render_form(form)}}
-		<input type="submit" class="btn btn-primary" style="margin-top: 10px;" value="Login"/>
-	</form>
-	
-	<br/>
-	<p>Already have an account? Click <a href="/login">here</a> to login.</p>
+	<br>
+	<div class="text-center" style="margin: auto;">
+		<p>Already have an account? Click <a href="/login" class="btn btn-sm btn-outline-primary">here</a> to login.</p>
+	</div>
 {% endblock %}

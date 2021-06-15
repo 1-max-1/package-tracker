@@ -1,9 +1,14 @@
 {% extends "main_layout_container.html" %}
 {% block body %}
-	<h2>Verify your email address</h2>
-	<p>You're almost there! There's just one more step - we sent an email to the address you provided (<i>{{email}}</i>).</p>
-	<p>Please click the link contained in the email to verify your account. Once this is completed you can login.</p>
-	<p>It may take a couple minutes for the email to arrive. Make sure to check your spam folder as well.</p>
-	<p>Still didn't get the email?</p>
-	<a class="btn btn-outline-primary" href="/resendEmail/1/{{ email }}">Resend</a>
+	<div class="text-center" style="margin-top: 30px;">
+		<h2>Verify your email address</h2>
+		<p style="margin-bottom: 0px;">You're almost there! There's just one more step - we sent an email to the address you provided (<i>{{email}}</i>).</p>
+		<p style="margin-bottom: 0px;">Please click the link contained in the email to verify your account. Once this is completed you can login.</p>
+		<p>It may take a couple minutes for the email to arrive. Make sure to check your spam folder as well.</p>
+	</div>
+
+	<div class="d-grid text-center form-control" style="width: 8em; margin: auto;">
+		<p>Still didn't get the email?</p>
+		<a class="btn btn-outline-primary" href="/resendEmail/1/{{ email }}">Resend</a>
+	</div>
 {% endblock %}

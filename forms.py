@@ -6,15 +6,15 @@ from wtforms.validators import DataRequired, Email, EqualTo, Length
 # Represents (from a object point of view) the form that the user sees when they login.
 # Makes it easy to access the field data
 class LoginForm(FlaskForm):
-	email = StringField("Email", validators=[DataRequired(), Email(), Length(min=3, max=254)], render_kw={"class": "d-inline"})
-	password = PasswordField("Password", validators=[DataRequired(), Length(min=8, max=128)])
+	email = StringField("Email", validators=[DataRequired(), Email(), Length(min=3, max=254)], render_kw={"style": "margin: auto; width: 100%;"})
+	password = PasswordField("Password", validators=[DataRequired(), Length(min=8, max=128)], render_kw={"style": "margin: auto; width: 100%;"})
 	#classes = {"email": "", "password": ""}
 
 # Same thing but for registration
 class RegisterForm(FlaskForm):
-	email = StringField("Email", validators=[DataRequired(), Email(), Length(min=3, max=254)])
-	password = PasswordField("Password", validators=[DataRequired(), Length(min=8, max=128)])
-	passwordConfirmation = PasswordField("Confirm password", validators=[DataRequired(), Length(min=8, max=128), EqualTo("password", "Passwords do not match")])
+	email = StringField("Email", validators=[DataRequired(), Email(), Length(min=3, max=254)], render_kw={"style": "margin: auto; width: 100%;"})
+	password = PasswordField("Password", validators=[DataRequired(), Length(min=8, max=128)], render_kw={"style": "margin: auto; width: 100%;"})
+	passwordConfirmation = PasswordField("Confirm password", validators=[DataRequired(), Length(min=8, max=128), EqualTo("password", "Passwords do not match")], render_kw={"style": "margin: auto; width: 100%;"})
 	#classes = {"email": "", "password": "", "passwordConfirmation": ""}
 
 class AddPackageForm(FlaskForm):
