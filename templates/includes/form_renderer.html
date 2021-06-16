@@ -6,7 +6,7 @@
 	<!-- Loop through all of the remaining fields, skipping the csrf one we already did -->
 	{% for field in form if field.name != 'csrf_token' %}
 		<!-- + form.classes[field.name] maybe add this in-->
-		<div class="{{'form-control'}}" style="margin-bottom: 10px;">
+		<div class="{{(form.classes[field.name] if form.classes else 'form-control')}}" style="margin-bottom: 10px;">
 			<!-- Output the field title and the actual field element to the html -->
 			{{ field.label() }}
 			<br>

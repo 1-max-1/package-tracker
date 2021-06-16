@@ -82,38 +82,44 @@
 		}
 	</script>
 
-	<!-- This form will submit to itself -->
-	<form action="" method="POST">
-		<!-- The renderer does all of the work of getting the fields and adding them to the html -->
-		{{render_form(form)}}
-		<input type="submit" class="btn btn-primary" style="display: inline;" value="Go"/>
-	</form>
+	<!-- Container that holds the main html -->
+	<div style="padding: 10px;">
+		<!-- This form will submit to itself -->
+		<form action="" method="POST">
+			<!-- The renderer does all of the work of getting the fields and adding them to the html -->
+			<div class="form-control">
+				{{render_form(form)}}
+				<input type="submit" class="btn btn-primary d-inline-block" value="Track new package"/>
+			</div>
+		</form>
+		<br>
 
-	<!-- Below the form, we render each package the user is tracking in a list. These are passed in -->
-	<ul class="list-group" id="packageListUL">	
-		{% if not packageList %}
-			<li class="list-group-item">You are not tracking any packages. Add one!</li>
-		<!-- If there are some things in the list then we loop through them -->
-		{% else %}
-			{% for package in packageList %}
-				<li class="list-group-item" id="packageListLI-{{package['id']}}">
-					<!-- Render the package title -->
-					<p class="d-inline-block" id="packageLabel-{{package['id']}}">{{ package["title"] }}</p>
-					<!-- Button with link to package details page for this package -->
-					<a role="button" class="btn btn-outline-primary" href="/packageDetails/{{package['id']}}">View details</a>
-					<!-- Button that opens the title input modal -->
-					<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#titleInputModal" onclick="assignPackageIDToModal(`{{package['id']}}`, `titleInputModal`)">Change title</button>
-					<!-- Opens deletion modal -->
-					<button type="button" class="btn btn-outline-danger d-inline-block" data-bs-toggle="modal" data-bs-target="#deleteModal" onclick="assignPackageIDToModal(`{{package['id']}}`, `deleteModal`)">Delete</button>
+		<!-- Below the form, we render each package the user is tracking in a list. These are passed in -->
+		<ul class="list-group" id="packageListUL">	
+			{% if not packageList %}
+				<li class="list-group-item" style="border: 1px solid black;">You are not tracking any packages. Add one!</li>
+			<!-- If there are some things in the list then we loop through them -->
+			{% else %}
+				{% for package in packageList %}
+					<li class="list-group-item align-top" id="packageListLI-{{package['id']}}" style="border: 1px solid black;">
+						<!-- Render the package title -->
+						<p class="d-inline-block" id="packageLabel-{{package['id']}}">{{ package["title"] }}</p>
+						<!-- Button with link to package details page for this package -->
+						<a role="button" class="btn btn-outline-primary" href="/packageDetails/{{package['id']}}">View details</a>
+						<!-- Button that opens the title input modal -->
+						<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#titleInputModal" onclick="assignPackageIDToModal(`{{package['id']}}`, `titleInputModal`)">Change title</button>
+						<!-- Opens deletion modal -->
+						<button type="button" class="btn btn-outline-danger d-inline-block" data-bs-toggle="modal" data-bs-target="#deleteModal" onclick="assignPackageIDToModal(`{{package['id']}}`, `deleteModal`)">Delete</button>
 
-					<!-- If the package hasn't been updated for 3 weeks, then we show a little alert -->
-					{% if package["current_time"] - package["last_new_data"] > 2160000 %}
-						<p class="text-warning d-inline-block"><span class="border border-warning">This package is old and hasn't been updated for a while. Consider deleting it? Or, <a href="/renewPackage/{{package['id']}}">renew</a> it.</span></p>
-					{% endif %}
-				</li>
-			{% endfor %}
-		{% endif %}
-	</ul>
+						<!-- If the package hasn't been updated for 3 weeks, then we show a little alert -->
+						{% if package["current_time"] - package["last_new_data"] > 2160000 %}
+							<p class="text-warning d-inline-block"><span class="border border-warning">This package is old and hasn't been updated for a while. Consider deleting it? Or, <a href="/renewPackage/{{package['id']}}">renew</a> it.</span></p>
+						{% endif %}
+					</li>
+				{% endfor %}
+			{% endif %}
+		</ul>
+	</div>
 
 	<!-- This is the modal dialog allowing the user to input text for their package title -->
 	<div class="modal fade" id="titleInputModal" tabindex="-1" aria-labelledby="titleInputModal" aria-hidden="true">

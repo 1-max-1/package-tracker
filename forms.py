@@ -8,23 +8,20 @@ from wtforms.validators import DataRequired, Email, EqualTo, Length
 class LoginForm(FlaskForm):
 	email = StringField("Email", validators=[DataRequired(), Email(), Length(min=3, max=254)], render_kw={"style": "margin: auto; width: 100%;"})
 	password = PasswordField("Password", validators=[DataRequired(), Length(min=8, max=128)], render_kw={"style": "margin: auto; width: 100%;"})
-	#classes = {"email": "", "password": ""}
 
 # Same thing but for registration
 class RegisterForm(FlaskForm):
 	email = StringField("Email", validators=[DataRequired(), Email(), Length(min=3, max=254)], render_kw={"style": "margin: auto; width: 100%;"})
 	password = PasswordField("Password", validators=[DataRequired(), Length(min=8, max=128)], render_kw={"style": "margin: auto; width: 100%;"})
 	passwordConfirmation = PasswordField("Confirm password", validators=[DataRequired(), Length(min=8, max=128), EqualTo("password", "Passwords do not match")], render_kw={"style": "margin: auto; width: 100%;"})
-	#classes = {"email": "", "password": "", "passwordConfirmation": ""}
 
 class AddPackageForm(FlaskForm):
 	trackingCode = StringField("Tracking number", validators=[DataRequired()])
+	classes = {"trackingCode": "d-inline-block"}
 
 class ForgotPasswordForm(FlaskForm):
 	email = StringField("Email", validators=[DataRequired(), Email(), Length(min=3, max=254)], render_kw={"style": "margin: auto; width: 100%;"})
-	#classes = {"email": ""}
 
 class ResetPasswordForm(FlaskForm):
 	password = PasswordField("Password", validators=[DataRequired(), Length(min=8, max=128)], render_kw={"style": "margin: auto; width: 100%;"})
 	passwordConfirmation = PasswordField("Confirm password", validators=[DataRequired(), Length(min=8, max=128), EqualTo("password", "Passwords do not match")], render_kw={"style": "margin: auto; width: 100%;"})
-	#classes = {"password": "", "passwordConfirmation": ""}
