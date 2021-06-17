@@ -219,6 +219,12 @@ class PackageHandler():
 		cur = self.con.cursor()
 		cur.execute("UPDATE packages SET title = ?", [newTitle]) #Update and close connection
 		self.con.commit()
+		
+		# If the title was an empty string, then the title for this package should now default back to the
+		# tracking number. We need to perform an additional query to get the tracking number.
+		if newTitle == None:
+			cur.execute("SELECT trackingNumber FROM packages WHERE id = ?", [packageID])
+			newTitle = cur.fetchone()[0]
 		cur.close()
 
 		# We have succeeded - return the new title
