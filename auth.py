@@ -183,10 +183,14 @@ class Authenticator():
 
 	# Purges any accounts that have not been verified within half an hour
 	# Does the ame thing with password resets
-	@createDBConnection
 	def removeExpiredTokens(self):
-		cur = self.con.cursor()
+		# Cant use the decorator because this runs in another thread
+		con = sqlite3.connect(self.dbPath)
+		cur = con.cursor()
+
 		cur.execute("DELETE FROM pending_users WHERE ? - time_created > 1800", [time()])
 		cur.execute("DELETE FROM password_resets WHERE ? - time_created > 1800", [time()])
-		self.con.commit()
+
+		con.commit()
 		cur.close()
+		con.close()

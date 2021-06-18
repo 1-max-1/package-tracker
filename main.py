@@ -1,6 +1,6 @@
 from os import environ
 from functools import wraps
-from socket import gethostname, gethostbyname
+#from socket import gethostname, gethostbyname
 
 from flask import Flask, render_template, session, flash, redirect, url_for, request
 import forms
@@ -243,4 +243,5 @@ def renewPackage(packageID):
 
 if __name__ == "__main__":
 	#TODO: Make sure to change this to non-debg on production
-	app.run(debug=True, use_reloader=False, host=gethostbyname(gethostname()), port=5000)
+	#gethostbyname(gethostname())
+	app.run(debug=True, use_reloader=False, host="0.0.0.0", port=5000)
