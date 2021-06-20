@@ -23,8 +23,8 @@ class RegisterForm(FlaskForm):
 			raise ValidationError("Password must contain at least one number")
 
 class AddPackageForm(FlaskForm):
-	trackingCode = StringField("Tracking number", validators=[DataRequired()])
-	classes = {"trackingCode": "d-inline-block"}
+	trackingCode = StringField("Tracking number", validators=[DataRequired()], render_kw={"style": "width: 300px;"})
+	classes = {"trackingCode": ""}
 
 class ForgotPasswordForm(FlaskForm):
 	email = StringField("Email", validators=[DataRequired(), Email(), Length(min=3, max=254)], render_kw={"style": "margin: auto; width: 100%;"})

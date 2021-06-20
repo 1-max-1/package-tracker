@@ -3,11 +3,15 @@
 {% block body %}
 	<div style="padding: 10px;">
 		<!-- The package title will be in the first record in the list under the date column.
-			This is due to the SQL query in packages.getPackageData
-		I know this looks wrong but trust me, its all good. -->
+		This is due to the SQL query in packages.getPackageData().
+		I know this looks wrong but trust me, its all good. Look at the SQL id you dont believe me. -->
 		<h1>{{ packageData[0]["date"] }}</h1>
+		{% if packageData[0]["date"] != packageData[0]["time"] %}
+			<h6>Tracking code: {{ packageData[0]["time"] }}</h6> <!-- Same sort of thing -->
+		{% endif %}
 
 		<!-- The data for each package stage is passed in as a list of dicts -->
+		<br>
 		<ul class="list-group">
 			{% if packageData|length < 2 %}
 				<li class="list-group-item" style="border: 1px solid black; margin-bottom: 5px;">There is no tracking data for this package yet. Please try again in a few minutes.</li>

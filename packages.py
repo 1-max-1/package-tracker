@@ -29,10 +29,10 @@ class PackageHandler():
 		self.con = None
 
 		self.scheduler = BackgroundScheduler()
-		#self.scheduler.add_job(self.addOldPackagesToQueue, "interval", seconds=15)
-		#self.scheduler.add_job(self.scrapeNextInQueue, "interval", seconds=60)
-		#self.scheduler.add_job(self.checkForDeadPackages, "interval", seconds=300)
-		#self.scheduler.start()
+		self.scheduler.add_job(self.addOldPackagesToQueue, "interval", seconds=15)
+		self.scheduler.add_job(self.scrapeNextInQueue, "interval", seconds=60)
+		self.scheduler.add_job(self.checkForDeadPackages, "interval", seconds=300)
+		self.scheduler.start()
 
 		# Dont wait for full page load
 		caps = DesiredCapabilities().CHROME
@@ -42,15 +42,15 @@ class PackageHandler():
 		opts.add_argument("--disable-blink-features=AutomationControlled")
 		opts.add_argument("--headless") # Runs faster - no rendering
 		# Startup the browser
-		#self.browser = Chrome(chromeDriverName, desired_capabilities=caps, chrome_options=opts)
-		#self.browser.get("https://google.com")
-		self.browser = None
+		self.browser = Chrome(chromeDriverName, desired_capabilities=caps, chrome_options=opts)
+		self.browser.get("https://google.com")
+		#self.browser = None
 
 	# Acts like a destructor
 	def __del__(self):
-		#self.scheduler.shutdown()
-		#self.browser.close()
-		pass
+		self.scheduler.shutdown()
+		self.browser.close()
+		#pass
 
 	# Gets the top package on the queue - next in line. Proceeds to scrape the data for that package and add it to the db. Package is then removed from the queue and updated
 	# Cant use the decorator here becase the sqlite connection will be on another thread
@@ -190,7 +190,7 @@ class PackageHandler():
 
 		# Return all stages in the packages journey with date, time and the description of the event
 		# The package title is added to the top of the result. Order by reverse order so data is in date order
-		cur.execute("SELECT id, date, time, data FROM package_data WHERE package_id = ? UNION SELECT 0, COALESCE(title, trackingNumber) AS title, NULL, NULL FROM packages WHERE id = ?", [packageID, packageID])
+		cur.execute("SELECT id, date, time, data FROM package_data WHERE package_id = ? UNION SELECT 0, COALESCE(title, trackingNumber) AS title, trackingNumber, NULL FROM packages WHERE id = ?", [packageID, packageID])
 		result = cur.fetchall()
 		cur.close()
 		return result
@@ -217,7 +217,7 @@ class PackageHandler():
 		# Assign none to the title if the string is empty - we want to insert NULL into the db not an empty string
 		newTitle = title.strip() if len(title.strip()) > 0 else None
 		cur = self.con.cursor()
-		cur.execute("UPDATE packages SET title = ?", [newTitle]) #Update and close connection
+		cur.execute("UPDATE packages SET title = ? WHERE id = ?", [newTitle, packageID]) #Update and close connection
 		self.con.commit()
 		
 		# If the title was an empty string, then the title for this package should now default back to the
