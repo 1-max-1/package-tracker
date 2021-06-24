@@ -9,6 +9,7 @@ from selenium.webdriver.chrome.options import Options
 # These are for waiting for the package data to appear
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import StaleElementReferenceException
 
 # This will be a decorator. It gets applied to class functions and modifies them so that a new database
 # connection is created before the function is called. The connection is then closed. This saves having
@@ -69,7 +70,7 @@ class PackageHandler():
 		# Browse to the page that tracks our package
 		self.browser.get("https://parcelsapp.com/en/tracking/" + package["trackingNumber"])
 		# Wait until the data has been fetched - a <ul> element will appear on the page
-		unorderedList = WebDriverWait(self.browser, 30000).until(EC.presence_of_element_located(("css selector", ".list-unstyled.events")))
+		unorderedList = WebDriverWait(self.browser, 30000, ignored_exceptions=(StaleElementReferenceException,)).until(EC.presence_of_element_located(("css selector", ".list-unstyled.events")))
 		unorderedListItems = unorderedList.find_elements_by_tag_name("li")
 
 		# Get the number of package rout data points for this package
