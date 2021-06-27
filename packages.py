@@ -1,6 +1,6 @@
 import sqlite3
 from apscheduler.schedulers.background import BackgroundScheduler
-from time import time, strftime, strptime
+from time import time, strftime, strptime, gmtime
 
 # These create the browser and set the required options needed for it to function with parcelsapp
 from selenium.webdriver import Chrome
@@ -191,9 +191,14 @@ class PackageHandler():
 
 		# Return all stages in the packages journey with date, time and the description of the event
 		# The package title is added to the top of the result. Order by reverse order so data is in date order
-		cur.execute("SELECT id, date, time, data FROM package_data WHERE package_id = ? UNION SELECT 0, COALESCE(title, trackingNumber) AS title, trackingNumber, NULL FROM packages WHERE id = ?", [packageID, packageID])
+		cur.execute("SELECT id, date, time, data FROM package_data WHERE package_id = ? UNION SELECT 0, COALESCE(title, trackingNumber) AS title, trackingNumber, ROUND(last_updated) FROM packages WHERE id = ?", [packageID, packageID])
 		result = cur.fetchall()
 		cur.close()
+
+		# We need to parse the seconds then reassign them to the row. However, this cannot be done to the
+		# Row object directly, so we need to convert it to a dictionary first.
+		result = [dict(row) for row in result]
+		result[0]["data"] = strftime("%a %d %b %Y", gmtime(result[0]["data"]))
 		return result
 	
 	# This checks if the specified user id has access to the specified package
