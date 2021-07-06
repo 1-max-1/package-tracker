@@ -1,6 +1,6 @@
 from os import environ
 from functools import wraps
-#from socket import gethostname, gethostbyname
+from json import dumps
 
 from flask import Flask, render_template, session, flash, redirect, url_for, request
 import forms
@@ -119,19 +119,19 @@ def packageList():
 	packageListDict = packageHandler.getListOfPackages(session["userID"])
 	return render_template("packageList.html", form=form, packageList=packageListDict)
 
-@app.route("/packageDetails/<int:packageID>")
-@login_required
-def viewPackage(packageID):
-	packageData = packageHandler.getPackageData(packageID, session["userID"])
+# @app.route("/packageDetails/<int:packageID>")
+# @login_required
+# def viewPackage(packageID):
+# 	packageData = packageHandler.getPackageData(packageID, session["userID"])
 
-	# Make sure that the supplied package id is in the list of packages that this user is tracking
-	# thr getPackageData function does this automatically for us
-	if not packageData:
-		flash("You are not tracking that package. Add it!", "primary")
-		return redirect(url_for("packageList"))
+# 	# Make sure that the supplied package id is in the list of packages that this user is tracking
+# 	# thr getPackageData function does this automatically for us
+# 	if not packageData:
+# 		flash("You are not tracking that package. Add it!", "primary")
+# 		return redirect(url_for("packageList"))
 
-	# Pass the data to the template where it will be iterated over and rendered
-	return render_template("packageData.html", packageData=packageData)
+# 	# Pass the data to the template where it will be iterated over and rendered
+# 	return render_template("packageData.html", packageData=packageData)
 
 @app.route("/confirmUserEmail/<string:token>")
 def confirmUserEmail(token):
@@ -241,7 +241,19 @@ def renewPackage(packageID):
 		flash("You cannot renew that package as you do not own it!", "danger")
 	return redirect(url_for("packageList"))
 
+# This endpoint is for handling ajax requests from the UI.
+# the ajax request is initiated when the user wants to see the data of one of their packages.
+# Return value will be in JSON
+@app.route("/packageData", methods=["POST"])
+def postPackageData():
+	# If they dont have a user ID in their session then they are not logged in, which means they are
+	# manipulating the URL. HAXXXXX block them from it.
+	if "userID" not in session or "packageID" not in request.form:
+		return dumps({"success": False})
+
+	packageData = packageHandler.getPackageData(request.form["packageID"], session["userID"])
+	return dumps(packageData)
+
 if __name__ == "__main__":
 	#TODO: Make sure to change this to non-debg on production
-	#gethostbyname(gethostname())
 	app.run(debug=True, use_reloader=False, host="0.0.0.0", port=5000)

@@ -1,89 +1,10 @@
 {% from "includes/form_renderer.html" import render_form %}
 {% extends "main_layout_container.html" %}
 {% block body %}
-	<script type="text/javascript">
-		// When a modal's submit button is clicked, we need some way of getting the package ID that
-		// the modal is for. This function is called just before the modal is opened. It will put the
-		// package ID into a hidden input on the modal so it can be retrieved later.
-		function assignPackageIDToModal(packageID, modalName) {
-			$("#" + modalName + "-packageIDHolder").val(parseInt(packageID));
-		}
-
-		// Called when the user clicks the dialog button to rename or delete their package.
-		// modalName should be the css ID of the modal that called this function.
-		// Since the modal HTML elements have ids that are prefixed by the modal name, we just put
-		// the modal name in front of an id to get the element of the active modal
-		function handleModalSubmit(modalName) {
-			// Disable the 3 buttons
-			$("#" + modalName + "-xButton").prop("disabled", true);
-			$("#" + modalName + "-cancelButton").prop("disabled", true);
-			$("#" + modalName + "-updateButton").prop("disabled", true);
-
-			// Add HTML - this is a little bootstrap spinner loading thing
-			$("#" + modalName + "-modal-footer").append('<div class="spinner-border text-primary" id="' + modalName + '-loadingSpinner" role="status"><span class="visually-hidden">Loading...</span></div>');
-			// Make the error message hidden - new request, no error
-			$("#" + modalName + "-modalErrorMessage").removeClass("d-inline");
-			$("#" + modalName + "-modalErrorMessage").addClass("d-none");
-
-			var packageID = $("#" + modalName + "-packageIDHolder").val();
-
-			// This request will send the request to the flask endpoint
-			var xhttp = new XMLHttpRequest();
-  			xhttp.onreadystatechange = () => {
-				// State = 4 means request has completed
-    			if (xhttp.readyState == 4) {
-					// Remove loading indicator and re-enable all of the buttons
-      				$("#" + modalName + "-loadingSpinner").remove();
-					$("#" + modalName + "-xButton").prop("disabled", false);
-					$("#" + modalName + "-cancelButton").prop("disabled", false);
-					$("#" + modalName + "-updateButton").prop("disabled", false);
-
-					// If the request was a success then we can hide the modal
-					if(xhttp.status == 200 && xhttp.responseText != "0") {
-						// Update the package label with the new title
-						if(modalName == "titleInputModal")
-							$("#packageLabel-" + packageID).text(xhttp.responseText);
-						else if(modalName == "deleteModal")
-							removePackageFromList(packageID);
-							
-						// Hide modal and reset text input field
-						bootstrap.Modal.getInstance(document.getElementById(modalName)).hide();
-						$("#new-title-input").val("");
-					}
-					// If it failed then we show the error messge
-					else {
-						$("#" + modalName + "-modalErrorMessage").removeClass("d-none");
-						$("#" + modalName + "-modalErrorMessage").addClass("d-inline");
-					}
-    			}
-  			};
-
-			// Send the request to flask - contains new title and package ID,
-			// or just the package ID if we are deleting.
-			// Encode the paramters to stay safe :-) !!!
-			if(modalName == "titleInputModal"){
-				xhttp.open("POST", "updatePackageTitle", true);
-				xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-				xhttp.send("newTitle=" + encodeURIComponent($("#new-title-input").val()) + "&packageID=" + encodeURIComponent(packageID));
-			}
-			else if(modalName == "deleteModal") {
-				xhttp.open("POST", "deletePackage", true);
-				xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-				xhttp.send("packageID=" + encodeURIComponent(packageID));
-			}
-		}
-
-		function removePackageFromList(id) {
-			// First, remove it from the list
-			$("#packageListLI-" + id).remove();
-			// If there are no more packages, then we need to add the default prompt
-			if($("#packageListUL li").length == 0)
-				$("#packageListUL").append('<li class="list-group-item">You are not tracking any packages. Add one!</li>');
-		}
-	</script>
+	<script type="text/javascript" src="{{ url_for('static', filename='packageListLogic.js') }}"></script>
 
 	<!-- Container that holds the main html -->
-	<div style="padding: 10px;">
+	<div style="padding: 10px;" id="main-container">
 		<!-- This form will submit to itself -->
 		<form action="" method="POST">
 			<!-- The renderer does all of the work of getting the fields and adding them to the html -->
@@ -92,35 +13,52 @@
 				<input type="submit" class="btn btn-primary d-inline-block" value="Track new package" style="width: 300px;" />
 			</div>
 		</form>
+
+		<br>
 		<br>
 
 		<!-- Below the form, we render each package the user is tracking in a list. These are passed in -->
-		<ul class="list-group" id="packageListUL">	
-			{% if not packageList %}
-				<li class="list-group-item" style="border: 1px solid black;">You are not tracking any packages. Add one!</li>
-			<!-- If there are some things in the list then we loop through them -->
-			{% else %}
-				{% for package in packageList %}
-					<li class="list-group-item align-top" id="packageListLI-{{package['id']}}">
-						<!-- Render the package title -->
-						<p class="d-inline-block mb-1" id="packageLabel-{{package['id']}}">{{ package["title"] }}</p>
-						<br>
-						<!-- Button with link to package details page for this package -->
-						<a role="button" class="btn btn-outline-primary" href="/packageDetails/{{package['id']}}">View details</a>
-						<!-- Button that opens the title input modal -->
-						<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#titleInputModal" onclick="assignPackageIDToModal(`{{package['id']}}`, `titleInputModal`)">Change name</button>
-						<!-- Opens deletion modal -->
-						<button type="button" class="btn btn-outline-danger d-inline-block" data-bs-toggle="modal" data-bs-target="#deleteModal" onclick="assignPackageIDToModal(`{{package['id']}}`, `deleteModal`)">Delete</button>
+		{% if not packageList %}
+			<h6>You are not tracking any packages. Add one!</h6>
+		<!-- If there are some things in the list then we loop through them -->
+		{% else %}
+		<!-- The accordion contains all of the packages -->
+		<div class="accordion" id="packageListAccordion">
+			{% for package in packageList %}
+				<!-- Each package needs an item -->
+				<div class="accordion-item" id="packageListAccordionItem-{{package['id']}}">
+					<!-- Items have a header with an expansion button-->
+					<h2 class="accordion-header" id="heading-{{package['id']}}">
+						<div id="heading-div-{{package['id']}}" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#collapse-{{package['id']}}" aria-expanded="false" aria-controls="collapse-{{package['id']}}">
 
-						<!-- If the package hasn't been updated for 3 weeks, then we show a little alert -->
-						{% if package["current_time"] - package["last_new_data"] > 2160000 %}
-							<br>
-							<p class="text-warning d-inline-block" style="padding: 5px;"><span class="border border-warning">This package is old and hasn't been updated for a while. Consider deleting it? Or, <a href="/renewPackage/{{package['id']}}">renew</a> it.</span></p>
-						{% endif %}
-					</li>
-				{% endfor %}
-			{% endif %}
-		</ul>
+							<div style="padding:3px">
+								<!-- Button that opens the title input modal -->
+								<button style="margin-bottom:3px" type="button" class="btn btn-outline-primary float-right" data-bs-toggle="modal" data-bs-target="#titleInputModal" onclick="assignPackageIDToModal(`{{package['id']}}`, `titleInputModal`)">Name</button>
+								<!-- Opens deletion modal -->
+								<button type="button" class="btn btn-outline-danger float-right" data-bs-toggle="modal" data-bs-target="#deleteModal" onclick="assignPackageIDToModal(`{{package['id']}}`, `deleteModal`)">Delete</button>
+							</div>
+
+							<!-- LOL -->
+							<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+							<p id="packageLabel-{{package['id']}}">{{ package["title"] }}</p>
+							<p>&nbsp;&nbsp;</p>
+
+							<!-- If the package hasn't been updated for 3 weeks, then we show a little alert -->
+							{% if package["current_time"] - package["last_new_data"] > 2160000 %}
+								<br>
+								<p class="text-warning d-inline-block" style="padding: 5px;"><span class="border border-warning">This package is old and hasn't been updated for a while. Consider deleting it? Or, <a href="/renewPackage/{{package['id']}}">renew</a> it.</span></p>
+							{% endif %}
+						</div>
+					</h2>
+
+					<!-- And also a body - this contains the content-->
+					<div id="collapse-{{package['id']}}" class="accordion-collapse collapse" aria-labelledby="heading-{{package['id']}}" data-bs-parent="#packageListAccordion">
+						<div class="accordion-body" id="accordion-body-{{package['id']}}"></div>
+					</div>
+				</div>
+			{% endfor %}
+		</div>
+		{% endif %}
 	</div>
 
 	<!-- This is the modal dialog allowing the user to input text for their package title -->

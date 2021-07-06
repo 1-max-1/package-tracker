@@ -11,7 +11,7 @@ class EmailHandler:
 	# When the class is initiated it will create a connection to google's smtp server
 	def __init__(self):
 		# Constants - makes it easier to modify them if they are up here
-		self.emailAddress = "flask19181@gmail.com"
+		self.emailAddress = environ["EMAIL_ADDRESS"]
 		self.hostname = "http://127.0.0.1:5000"
 
 		# Connect to email server

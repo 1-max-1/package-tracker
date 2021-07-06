@@ -93,6 +93,8 @@ class PackageHandler():
 
 			# The data is what the package stage is actually about, things like Delivered, In Transit To Local Depot, Arrive at destination country etc.
 			data = listItem.find_element_by_css_selector("div.event-content").find_element_by_tag_name("strong").text
+			if(data.startswith("No information about your package. We've checked all relevant couriers")):
+				data = "There is no tracking information for your package. Please make sure the tracking code is correct."
 
 			# Once we have all of the info we can insert it into the db
 			cur.execute("INSERT INTO package_data (package_id, date, time, data) VALUES (?, ?, ?, ?)", [package["id"], strftime("%a %d %b %Y", parsedTime), strftime("%I:%M %p", parsedTime), data])
@@ -175,16 +177,37 @@ class PackageHandler():
 		cur.row_factory = sqlite3.Row # Dictionary format
 		
 		# The result set needs to have the title, but if the title is null we use the tracking number
-		cur.execute("SELECT id, COALESCE(title, trackingNumber) AS title, last_new_data, ? AS current_time FROM packages WHERE user_id = ?", [time(), userID])
+		cur.execute("SELECT id, COALESCE(title, trackingNumber) AS title, last_new_data, ? AS current_time FROM packages WHERE user_id = ? ORDER BY id DESC", [time(), userID])
 		result = cur.fetchall()
 		cur.close()
 		return result
+
+	# @createDBConnection
+	# def getPackageData(self, packageID, userID):
+	# 	# Make sure user has access
+	# 	if self.isPackageAssociatedWithUser(packageID, userID) == False:
+	# 		return False
+
+	# 	cur = self.con.cursor() # Dictionary format cursor
+	# 	cur.row_factory = sqlite3.Row
+
+	# 	# Return all stages in the packages journey with date, time and the description of the event
+	# 	# The package title is added to the top of the result. Order by reverse order so data is in date order
+	# 	cur.execute("SELECT id, date, time, data FROM package_data WHERE package_id = ? UNION SELECT 0, COALESCE(title, trackingNumber) AS title, trackingNumber, ROUND(last_updated) FROM packages WHERE id = ?", [packageID, packageID])
+	# 	result = cur.fetchall()
+	# 	cur.close()
+
+	# 	# We need to parse the seconds then reassign them to the row. However, this cannot be done to the
+	# 	# Row object directly, so we need to convert it to a dictionary first.
+	# 	result = [dict(row) for row in result]
+	# 	result[0]["data"] = strftime("%a %d %b %Y", gmtime(result[0]["data"]))
+	# 	return result
 
 	@createDBConnection
 	def getPackageData(self, packageID, userID):
 		# Make sure user has access
 		if self.isPackageAssociatedWithUser(packageID, userID) == False:
-			return False
+			return {"success": False}
 
 		cur = self.con.cursor() # Dictionary format cursor
 		cur.row_factory = sqlite3.Row
@@ -199,7 +222,8 @@ class PackageHandler():
 		# Row object directly, so we need to convert it to a dictionary first.
 		result = [dict(row) for row in result]
 		result[0]["data"] = strftime("%a %d %b %Y", gmtime(result[0]["data"]))
-		return result
+		# Return as neat object so I can serialize it
+		return {"success": True, "data": result}
 	
 	# This checks if the specified user id has access to the specified package
 	def isPackageAssociatedWithUser(self, packageID, userID):
