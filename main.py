@@ -1,6 +1,7 @@
 from os import environ
+from dotenv import load_dotenv
 from functools import wraps
-from json import dumps
+from json import dumps, load
 
 from flask import Flask, render_template, session, flash, redirect, url_for, request
 import forms
@@ -8,6 +9,9 @@ import forms
 from auth import Authenticator
 from packages import PackageHandler
 from emails import EmailHandler
+
+# Will load the variables from the .env file into the environment. You will need to create your own .env file
+load_dotenv()
 
 app = Flask(__name__)
 # A key is needed for some operations. In particular, for WTForms to protect against CSRF
